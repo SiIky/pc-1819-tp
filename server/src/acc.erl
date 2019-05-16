@@ -19,7 +19,7 @@ stop() ->
 acc(LSock) ->
     case gen_tcp:accept(LSock, 1000) of
         {ok, Socket} ->
-            Cl = spawn(fun() -> cl:auth(Socket) end),
+            Cl = cl:new(Socket),
             gen_tcp:controlling_process(Socket, Cl),
             handle_msgs(LSock);
         {error, timeout} ->
