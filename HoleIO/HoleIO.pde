@@ -9,7 +9,7 @@ void setup()
   size(800, 600);
   
   player = new Ball(100, 100);
-  consumable = new Food(int(random(width + 15)), int(random(height - 15)), 30, false);
+  consumable = new Food(int(random(width - 15)), int(random(height - 15)), 30, false);
   //consumable = new Food(500, 200, 30, false);
   
   frameRate(60);
