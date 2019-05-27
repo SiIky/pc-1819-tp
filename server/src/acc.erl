@@ -13,8 +13,7 @@ start() ->
     ok.
 
 stop() ->
-    ?MODULE ! stop,
-    ok.
+    srv:stop(?MODULE).
 
 acc(LSock) ->
     case gen_tcp:accept(LSock, 1000) of

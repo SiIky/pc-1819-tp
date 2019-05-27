@@ -14,10 +14,11 @@ match(P1, P2) ->
             cl:stop(P1),
             cl:stop(P2);
         Msg ->
-            io:format("Received message: ~p\n", [Msg])
+            io:format("Received message: ~p\n", [Msg]),
+            match(P1, P2)
     after 5000 ->
               match(P1, P2)
     end.
 
 stop(Match) ->
-    Match ! stop.
+    srv:stop(Match).

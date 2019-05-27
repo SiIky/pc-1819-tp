@@ -3,7 +3,8 @@
          call/2,
          cast/2,
          recv/1,
-         reply/2
+         reply/2,
+         stop/1
         ]).
 
 call(Srv, Msg) ->
@@ -12,7 +13,8 @@ call(Srv, Msg) ->
     Ref.
 
 cast(Srv, Msg) ->
-    Srv ! {cast, Msg}.
+    Srv ! {cast, Msg},
+    ok.
 
 recv(Ref) ->
     receive
@@ -21,3 +23,7 @@ recv(Ref) ->
 
 reply({From, Ref}, Reply) ->
     From ! {Ref, Reply}.
+
+stop(Who) ->
+    Who ! stop,
+    ok.

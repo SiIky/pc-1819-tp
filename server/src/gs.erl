@@ -14,8 +14,7 @@ start() ->
     ok.
 
 stop() ->
-    ?MODULE ! stop,
-    ok.
+    srv:stop(?MODULE).
 
 gs() ->
     receive

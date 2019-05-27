@@ -13,7 +13,7 @@ start() ->
     ok.
 
 stop() ->
-    ?MODULE ! stop.
+    srv:stop(?MODULE).
 
 ts(Scores) ->
     receive

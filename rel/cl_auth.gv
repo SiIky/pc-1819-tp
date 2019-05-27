@@ -1,0 +1,7 @@
+digraph G {
+    graph [layout=dot rankdir=TB];
+    gs -> {lm acc mm};
+    mm -> {ts match};
+    cl -> lm;
+    lm -> cl;
+}

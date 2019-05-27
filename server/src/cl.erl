@@ -8,44 +8,63 @@
 new(Socket) ->
     spawn(fun() -> auth(Socket) end).
 
-switch({auth, Socket}) ->
-    auth(Socket);
-switch({waiting_for_match, Socket}) ->
-    waiting_for_match(Socket);
-switch({ingame, Socket, Match}) ->
-    ingame(Socket, Match).
+switch({F, St}) ->
+    F(St).
 
 auth(Socket) ->
     receive
-        stop -> close_conn(Socket);
-        {auth, ok} ->
-            switch({waiting_for_match, Socket});
-        Msg ->
-            io:format("Unexpected message: ~p\n", [Msg])
-    end.
-
-waiting_for_match(Socket) ->
-    receive
-        stop -> close_conn(Socket);
-        {cast, {enter_match, Match}} ->
-            switch({ingame, Socket, Match});
-        Msg ->
-            io:format("Unexpected message: ~p\n", [Msg])
-    end.
-
-ingame(Socket, Match) ->
-    receive
-        stop -> close_conn(Socket);
+        stop ->
+            close_conn(Socket);
+        {cast, Msg} ->
+            switch(handle_cast_auth(Socket, Msg));
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
-            switch({ingame, Socket, Match})
+            auth(Socket)
+    end.
+
+waiting(Socket) ->
+    receive
+        stop ->
+            close_conn(Socket);
+        {cast, Msg} ->
+            switch(handle_cast_waiting(Socket, Msg));
+        Msg ->
+            io:format("Unexpected message: ~p\n", [Msg]),
+            waiting(Socket)
+    end.
+
+ingame({Socket, _}=St) ->
+    receive
+        stop ->
+            close_conn(Socket);
+        {cast, Msg} ->
+            handle_cast_ingame(St, Msg);
+        Msg ->
+            io:format("Unexpected message: ~p\n", [Msg]),
+            ingame(St)
     end.
 
 enter_match(Player, Match) ->
     srv:cast(Player, {enter_match, Match}).
 
+handle_cast_auth(Socket, {auth, ok}) ->
+    {fun waiting/1, Socket};
+handle_cast_auth(Socket, Msg) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    {fun auth/1, Socket}.
+
+handle_cast_waiting(Socket, {enter_match, Match}) ->
+    {fun ingame/1, {Socket, Match}};
+handle_cast_waiting(Socket, Msg) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    {fun waiting/1, Socket}.
+
+handle_cast_ingame(St, Msg) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    {fun ingame/1, St}.
+
 stop(Player) ->
-    Player ! stop.
+    srv:stop(Player).
 
 close_conn(_Socket) ->
     % TODO: Tell the client the server is going down
