@@ -1,6 +1,10 @@
 -module(mm).
 -export([
+         % to be used by players (?)
          carne_pa_canhao/1,
+
+         % to be used by matches
+         match_over/2,
 
          start/0,
          stop/0
@@ -16,16 +20,16 @@ stop() ->
 
 stop(Ps) ->
     [ cl:stop(P) || P <- Ps ],
-    ok;
+    ok.
 
 init() ->
     {[], []}.
 
-mm({[P2, P1], Matches}) ->
-    Match = match:new(P1, Xixa),
+mm({[P2, P1 | Rest], Matches}) ->
+    Match = match:new(P1, P2),
     cl:enter_match(P1, Match),
-    cl:enter_match(Xixa, Match)
-    mm({[], [Match|Matches]});
+    cl:enter_match(P2, Match),
+    mm({Rest, [Match|Matches]});
 mm({Ps, Matches}=State) ->
     receive
         stop ->
@@ -47,10 +51,15 @@ handle_call(State, From, _Msg) ->
     State.
 
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
-    {[Xixa|Ps], [Match|Matches]};
+    {[Xixa|Ps], Matches};
+handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
+    {[P1, P2 | Ps], Matches -- [Match]};
 handle_cast(State, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     State.
 
 carne_pa_canhao(Xixa) ->
     srv:cast(?MODULE, {carne_pa_canhao, Xixa}).
+
+match_over(P1, P2) ->
+    srv:cast({match_over, self(), P1, P2}).
