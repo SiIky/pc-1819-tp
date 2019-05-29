@@ -24,6 +24,6 @@ gs() ->
             mm:stop(),
             ok;
         Msg ->
-            io:format("Unexpected message: ~p", [Msg]),
+            io:format("Unexpected message: ~p\n", [Msg]),
             gs()
     end.

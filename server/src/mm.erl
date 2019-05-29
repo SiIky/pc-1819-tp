@@ -1,6 +1,7 @@
 -module(mm).
 -export([
          % to be used by players (?)
+         abort/1,
          carne_pa_canhao/1,
 
          % to be used by matches
@@ -50,6 +51,8 @@ handle_call(State, From, _Msg) ->
     srv:reply(From, sup),
     State.
 
+handle_cast({Ps, Matches}, {abort, Xixa}) ->
+    {Ps -- [Xixa], Matches};
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
 handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
@@ -57,6 +60,9 @@ handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
 handle_cast(State, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     State.
+
+abort(Xixa) ->
+    srv:cast(?MODULE, {abort, Xixa}).
 
 carne_pa_canhao(Xixa) ->
     srv:cast(?MODULE, {carne_pa_canhao, Xixa}).

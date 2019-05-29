@@ -19,18 +19,23 @@ acc(LSock) ->
     case gen_tcp:accept(LSock, 1000) of
         {ok, Socket} ->
             Cl = cl:new(Socket),
-            gen_tcp:controlling_process(Socket, Cl),
-            lm:new_client(Cl),
+            case gen_tcp:controlling_process(Socket, Cl) of
+                ok ->
+                    io:format("New client connected\n"),
+                    lm:new_client(Cl);
+                {error, Reason} ->
+                    cl:stop(Cl),
+                    io:format("Error changing the controlling process: ~p", [Reason])
+            end,
             handle_msgs(LSock);
-        {error, closed} ->
-            handle_msgs(LSock);
-        {error, timeout} ->
-            handle_msgs(LSock)
+        {error, timeout} -> handle_msgs(LSock);
+        {error, _}=E -> E
     end.
 
 handle_msgs(LSock) ->
     receive
         stop ->
+            gen_tcp:close(LSock),
             ok;
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),

@@ -48,7 +48,7 @@ insert_score(SP) ->
     srv:cast(?MODULE, {insert_score, SP}).
 
 top_score() ->
-    srv:call(?MODULE, top_score).
+    srv:recv(srv:call(?MODULE, top_score)).
 
 insert([], SP) ->
     [SP];

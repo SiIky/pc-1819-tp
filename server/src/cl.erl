@@ -18,6 +18,7 @@ auth(Socket) ->
         {cast, Msg} ->
             switch(handle_cast_auth(Socket, Msg));
         {tcp_closed, Socket} ->
+            io:format("Client closed TCP connection before authenticating\n"),
             lm:abort(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
@@ -30,6 +31,9 @@ waiting(Socket) ->
             close_conn(Socket);
         {cast, Msg} ->
             switch(handle_cast_waiting(Socket, Msg));
+        {tcp_closed, Socket} ->
+            io:format("Client closed TCP connection before authenticating\n"),
+            mm:abort(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             waiting(Socket)

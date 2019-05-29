@@ -5,6 +5,7 @@
          stop/0,
 
          abort/1,
+         clients_in_preauth/0,
          new_client/1
         ]).
 
@@ -28,8 +29,6 @@ lm({_, Preauth}=St) ->
         stop ->
             stop(Preauth),
             ok;
-        merdas ->
-            io:format("Preauth: ~p\n", [Preauth]);
         {call, {Pid, Ref}=From, Msg}
           when
               is_pid(Pid),
@@ -39,8 +38,12 @@ lm({_, Preauth}=St) ->
             lm(handle_cast(St, Msg))
     end.
 
-handle_call(St, From, _Msg) ->
-    srv:reply(From, sup),
+handle_call({_, Preauth}=St, From, clients_in_preauth) ->
+    srv:reply(From, Preauth),
+    St;
+handle_call(St, From, Msg) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    srv:reply(From, unexpected),
     St.
 
 handle_cast({UPs, Preauth}, {new_client, C}) ->
@@ -55,3 +58,6 @@ abort(C) ->
 
 new_client(C) ->
     srv:cast(?MODULE, {new_client, C}).
+
+clients_in_preauth() ->
+    srv:recv(srv:call(?MODULE, clients_in_preauth)).
