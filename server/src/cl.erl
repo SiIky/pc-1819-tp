@@ -17,6 +17,8 @@ auth(Socket) ->
             close_conn(Socket);
         {cast, Msg} ->
             switch(handle_cast_auth(Socket, Msg));
+        {tcp_closed, Socket} ->
+            lm:abort(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             auth(Socket)
@@ -66,6 +68,6 @@ handle_cast_ingame(St, Msg) ->
 stop(Player) ->
     srv:stop(Player).
 
-close_conn(_Socket) ->
-    % TODO: Tell the client the server is going down
+close_conn(Socket) ->
+    gen_tcp:close(Socket),
     ok.

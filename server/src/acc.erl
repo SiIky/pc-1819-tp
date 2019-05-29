@@ -20,6 +20,9 @@ acc(LSock) ->
         {ok, Socket} ->
             Cl = cl:new(Socket),
             gen_tcp:controlling_process(Socket, Cl),
+            lm:new_client(Cl),
+            handle_msgs(LSock);
+        {error, closed} ->
             handle_msgs(LSock);
         {error, timeout} ->
             handle_msgs(LSock)

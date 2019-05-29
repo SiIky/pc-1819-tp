@@ -2,39 +2,56 @@
 -export([
          % start/stopping
          start/0,
-         stop/0
+         stop/0,
+
+         abort/1,
+         new_client/1
         ]).
 
-%%
-%%
-%%
-
 start() ->
-    Pid = spawn(fun() -> server(init()) end),
+    Pid = spawn(fun() -> lm(init()) end),
     register(?MODULE, Pid),
     ok.
 
 stop() ->
     srv:stop(?MODULE).
 
-init() ->
-    dict:new().
+stop(Preauth) ->
+    [ cl:stop(P) || P <- Preauth ],
+    ok.
 
-server(Accs) ->
+init() ->
+    {dict:new(), []}.
+
+lm({_, Preauth}=St) ->
     receive
-        stop -> ok;
+        stop ->
+            stop(Preauth),
+            ok;
+        merdas ->
+            io:format("Preauth: ~p\n", [Preauth]);
         {call, {Pid, Ref}=From, Msg}
           when
               is_pid(Pid),
               is_reference(Ref) ->
-            server(handle_call(Accs, From, Msg));
+            lm(handle_call(St, From, Msg));
         {cast, Msg} ->
-            server(handle_cast(Accs, Msg))
+            lm(handle_cast(St, Msg))
     end.
 
-handle_call(Accs, From, _Msg) ->
+handle_call(St, From, _Msg) ->
     srv:reply(From, sup),
-    Accs.
+    St.
 
-handle_cast(Accs, _Msg) ->
-    Accs.
+handle_cast({UPs, Preauth}, {new_client, C}) ->
+    {UPs, [C|Preauth]};
+handle_cast({UPs, Preauth}, {abort, C}) ->
+    {UPs, Preauth -- [C]};
+handle_cast(St, _Msg) ->
+    St.
+
+abort(C) ->
+    srv:cast(?MODULE, {abort, C}).
+
+new_client(C) ->
+    srv:cast(?MODULE, {new_client, C}).
