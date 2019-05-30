@@ -1,4 +1,7 @@
-import java.net.*;
+import java.net.Socket;
+import java.io.BufferedReader;
+import java.io.PrintWriter;
+import java.io.InputStreamReader;
 
 /*
  * TODO: game state should be in its own class, for easier sharing
@@ -11,7 +14,10 @@ ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 
 int number_of_consumables = 30;
 Food[] consumables;
-Socket con;
+Socket sock;
+BufferedReader in;
+PrintWriter out;
+
 // 0 -> up ; 1 -> down; 2 -> left; 3 -> right
 boolean[] arrows = new boolean[4];
 
@@ -26,13 +32,16 @@ enum Screen {
     inqueue,
     ingame,
 };
+
 Screen screen = Screen.login; /* starts in the login screen */
 
 void setup()
 {
     try {
         /* TODO: how do we know when the connection goes down? */
-        con = new Socket("localhost", 4242);
+        sock = new Socket("localhost", 4242);
+        in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+        out = new PrintWriter(sock.getOutputStream());
     } catch (Exception e) {
         exit();
     }
@@ -88,19 +97,12 @@ void draw_login ()
     text("Password: ", 20, 180);
 
     // Draw the textboxes
-    for (TextBox t : textboxes) {
+    for (TextBox t : textboxes)
         t.DRAW();
-    }
-
-
-    if (textboxes.get(0).Text.equals("crlh") && textboxes.get(1).Text.equals("crlh1")) {
-        screen = Screen.inqueue;
-    }
 }
 
 void draw_inqueue ()
 {
-    delay(5000);
     screen = Screen.ingame;
 }
 
@@ -129,14 +131,14 @@ void draw_ingame ()
 }
 
 // calculates euclidean distance
-float distance(int p1x, int p1y, int p2x, int p2y) {
+float distance (int p1x, int p1y, int p2x, int p2y) {
     float p = p2x - p1x;
     float q = p2y - p1y;
 
     return sqrt(p*p + q*q);
 }
 
-void movePlayer()
+void movePlayer ()
 {
     if (arrows[0]) player.moveY(-1);
     if (arrows[1]) player.moveY(+1);
@@ -144,13 +146,28 @@ void movePlayer()
     if (arrows[3]) player.moveX(+1);
 }
 
-void keyPressed()
+void keyPressed ()
 {
     switch (screen) {
         case login:
-            for (TextBox t : textboxes) {
-                t.KEYPRESSED(key, (int)keyCode);
-            } break;
+            if (keyCode == ENTER
+                    && !textboxes.get(0).Text.equals("")
+                    && !textboxes.get(1).Text.equals(""))
+            {
+                try {
+                    String line = "login:" + textboxes.get(0).Text + "\t" + textboxes.get(1).Text;
+                    out.println(line);
+                    out.flush();
+
+                    line = in.readLine();
+                    if (line.equals("ok"))
+                        screen = Screen.inqueue;
+                } catch (Exception e) {}
+            } else {
+                for (TextBox t : textboxes)
+                    t.KEYPRESSED(key, keyCode);
+            }
+            break;
         case inqueue: break;
         case ingame:
                       if(keyCode == UP)    arrows[0] = true;
@@ -161,7 +178,7 @@ void keyPressed()
     }
 }
 
-void keyReleased()
+void keyReleased ()
 {
     if(keyCode == UP)    { arrows[0] = false; }
     if(keyCode == DOWN)  { arrows[1] = false; }

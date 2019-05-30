@@ -7,6 +7,7 @@
          abort/1,
          clients_in_preauth/0,
          create_account/2,
+         login/2,
          new_client/1
         ]).
 
@@ -42,6 +43,15 @@ lm({_, Preauth}=St) ->
 handle_call({_, Preauth}=St, From, clients_in_preauth) ->
     srv:reply(From, Preauth),
     St;
+handle_call({UPs, _}=St, From, {login, Uname, Passwd}) ->
+    case dict:find(Uname, UPs) of
+        {ok, Passwd} ->
+            srv:reply(From, ok),
+            St;
+        _ ->
+            srv:reply(From, invalid),
+            St
+    end;
 handle_call({UPs, Preauth}=St, From, {create_account, Uname, Passwd}) ->
     case dict:is_key(Uname, UPs) of
         true ->
@@ -74,3 +84,6 @@ clients_in_preauth() ->
 
 create_account(Uname, Passwd) ->
     srv:recv(srv:call(?MODULE, {create_account, Uname, Passwd})).
+
+login(Uname, Passwd) ->
+    srv:recv(srv:call(?MODULE, {login, Uname, Passwd})).
