@@ -12,12 +12,11 @@ class Food
         this.is_poison = is_poison;
     }
 
-
     // getters for position
     int getX()    { return this.posx; }
     int getY()    { return this.posy; }
     int getSize() { return this.size; }
-    boolean get_is_poison() { return this.is_poison; }
+    boolean is_poison() { return this.is_poison; }
 
     // setters for ball
     void setX(int posx) { this.posx = posx; }

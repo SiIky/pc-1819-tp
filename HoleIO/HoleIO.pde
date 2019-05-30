@@ -1,16 +1,36 @@
 import java.net.*;
+
+/*
+ * TODO: game state should be in its own class, for easier sharing
+ *       between this thread and the networking thread.
+ *       No Nestum BS pls though
+ */
+
 Ball player;
 
 int number_of_consumables = 30;
 Food[] consumables;
 Socket con;
-
 // 0 -> up ; 1 -> down; 2 -> left; 3 -> right
 boolean[] arrows = new boolean[4];
+
+/*
+ * TODO: register/login & waiting screen. Maybe different `draw()`
+ *       functions, 1 for each state. Maybe login & register can be
+ *       the same screen: 2 fields (uname, passwd), 2 buttons (login,
+ *       register)
+ */
+enum Screen {
+    login,
+    inqueue,
+    ingame,
+};
+Screen screen = Screen.login; /* starts in the login screen */
 
 void setup()
 {
     try {
+        /* TODO: how do we know when the connection goes down? */
         con = new Socket("localhost", 4242);
     } catch (Exception e) {
         exit();
@@ -22,6 +42,7 @@ void setup()
     player = new Ball(100, 100, true);
     consumables = new Food[number_of_consumables];
 
+    /* TODO: this will be done in the server */
     for(int i = 0; i < number_of_consumables; i++) {
         boolean poison_or_not = random(0, 1) > 0.7; // 30% chance of being poison
         consumables[i] = new Food(poison_or_not);
@@ -39,20 +60,11 @@ void draw()
     for(int i = 0; i < number_of_consumables; i++) {
         consumables[i].display();
 
-        if (consumables[i].get_is_poison()) {
-            float dist = distance(player.getX(), player.getY(), consumables[i].getX(), consumables[i].getY());
-            if (dist < player.getRadius()/2 + consumables[i].getSize()/2) {
-                player.eats_poison(consumables[i]);
-                boolean poison_or_not = random(0, 1) > 0.7;
-                consumables[i].pick_location(poison_or_not);
-            }
-        } else {
-            float dist = distance(player.getX(), player.getY(), consumables[i].getX(), consumables[i].getY());
-            if (dist < player.getRadius()/2 + consumables[i].getSize()/2) {
-                player.eats_food(consumables[i]);
-                boolean poison_or_not = random(0, 1) > 0.7;
-                consumables[i].pick_location(poison_or_not);
-            }
+        float dist = distance(player.getX(), player.getY(), consumables[i].getX(), consumables[i].getY());
+        if (dist < player.getRadius()/2 + consumables[i].getSize()/2) {
+            player.eats(consumables[i]); /* we dont care if its poison or not, just eat that */
+            boolean poison_or_not = random(0, 1) > 0.7;
+            consumables[i].pick_location(poison_or_not);
         }
     }
 }
@@ -67,15 +79,10 @@ float distance(int p1x, int p1y, int p2x, int p2y) {
 
 void movePlayer()
 {
-    if (arrows[0]) {
-        player.moveY(-1);
-    } if (arrows[1]) {
-        player.moveY(+1);
-    } if (arrows[2]) {
-        player.moveX(-1);
-    } if (arrows[3]) {
-        player.moveX(+1);
-    }
+    if (arrows[0]) player.moveY(-1);
+    if (arrows[1]) player.moveY(+1);
+    if (arrows[2]) player.moveX(-1);
+    if (arrows[3]) player.moveX(+1);
 }
 
 void keyPressed()
@@ -84,7 +91,6 @@ void keyPressed()
     if(keyCode == DOWN)  { arrows[1] = true; }
     if(keyCode == LEFT)  { arrows[2] = true; }
     if(keyCode == RIGHT) { arrows[3] = true; }
-
 }
 
 void keyReleased()

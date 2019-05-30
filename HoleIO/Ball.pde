@@ -29,7 +29,6 @@ class Ball
     void setY(int posy) { this.posy = posy; }
     void setRadius(int radius) { this.radius = radius; }
 
-
     // moves player on the x axis
     void moveX(int x) {
         this.posx = this.posx + x * this.speed;
@@ -43,18 +42,25 @@ class Ball
     }
 
     // eats a poison consumable
-    void eats_poison(Food poison) {
+    private void eats_poison(Food poison) {
         if (this.radius - poison.getSize() < min_radius) { ; }
         else { this.radius -= poison.getSize(); }
     }
 
     // eats an edible consumable
-    void eats_food(Food consumable) {
+    private void eats_food(Food consumable) {
         if (this.radius + consumable.getSize() > max_radius) { ; }
         else { this.radius += consumable.getSize(); }
 
         // to do: change speed //
         //this.speed = 10;
+    }
+
+    void eats (Food consumable) {
+        if (consumable.is_poison())
+            this.eats_poison(consumable);
+        else
+            this.eats_food(consumable);
     }
 
     // prints object to screen
