@@ -6,6 +6,7 @@
 
          abort/1,
          clients_in_preauth/0,
+         create_account/2,
          new_client/1
         ]).
 
@@ -41,6 +42,15 @@ lm({_, Preauth}=St) ->
 handle_call({_, Preauth}=St, From, clients_in_preauth) ->
     srv:reply(From, Preauth),
     St;
+handle_call({UPs, Preauth}=St, From, {create_account, Uname, Passwd}) ->
+    case dict:is_key(Uname, UPs) of
+        true ->
+            srv:reply(From, user_exists),
+            St;
+        false ->
+            srv:reply(From, ok),
+            {dict:store(Uname, Passwd, UPs), Preauth}
+    end;
 handle_call(St, From, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     srv:reply(From, unexpected),
@@ -61,3 +71,6 @@ new_client(C) ->
 
 clients_in_preauth() ->
     srv:recv(srv:call(?MODULE, clients_in_preauth)).
+
+create_account(Uname, Passwd) ->
+    srv:recv(srv:call(?MODULE, {create_account, Uname, Passwd})).

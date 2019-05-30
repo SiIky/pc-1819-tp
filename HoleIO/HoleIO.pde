@@ -7,6 +7,7 @@ import java.net.*;
  */
 
 Ball player;
+ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 
 int number_of_consumables = 30;
 Food[] consumables;
@@ -39,6 +40,19 @@ void setup()
     size(1200, 700);
     //size(800, 600);
 
+    // USERNAME TextBox
+    // CONFIGURED USING THE GLOBAL VARS
+    TextBox userTB = new TextBox(160, 103, 200, 35);
+
+    // PASSWORD TextBox
+    // CONFIGURED USING THE CLASS CONSTRACTOR
+    TextBox passTB = new TextBox(160, 153, 200, 35);
+    passTB.BorderWeight = 3;
+    passTB.BorderEnable = true;
+
+    textboxes.add(userTB);
+    textboxes.add(passTB);
+
     player = new Ball(100, 100, true);
     consumables = new Food[number_of_consumables];
 
@@ -52,6 +66,51 @@ void setup()
 }
 
 void draw()
+{
+    switch (screen) {
+        case login: draw_login(); break;
+        case inqueue: draw_inqueue(); break;
+        case ingame: draw_ingame(); break;
+    }
+}
+
+void draw_login ()
+{
+    background(40, 160, 40);
+
+    // Labels
+    fill(250, 250, 250);
+    text("LOGIN FORM", (width - textWidth("LOGIN FORM")) / 2, 60);
+    textSize(15);
+    text("Press Enter to Login", (width - textWidth("Press Enter to Login")) / 2, 80);
+    textSize(24);
+    text("Username: ", 20, 130);
+    text("Password: ", 20, 180);
+
+    // Draw the textboxes
+    for (TextBox t : textboxes) {
+        t.DRAW();
+    }
+
+
+    if (textboxes.get(0).Text.equals("crlh") && textboxes.get(1).Text.equals("crlh1")) {
+        screen = Screen.inqueue;
+    }
+}
+
+void draw_inqueue ()
+{
+    delay(5000);
+    screen = Screen.ingame;
+}
+
+void mousePressed() {
+    for (TextBox t : textboxes) {
+        t.PRESSED(mouseX, mouseY);
+    }
+}
+
+void draw_ingame ()
 {
     background(100);
     player.display();
@@ -87,10 +146,19 @@ void movePlayer()
 
 void keyPressed()
 {
-    if(keyCode == UP)    { arrows[0] = true; }
-    if(keyCode == DOWN)  { arrows[1] = true; }
-    if(keyCode == LEFT)  { arrows[2] = true; }
-    if(keyCode == RIGHT) { arrows[3] = true; }
+    switch (screen) {
+        case login:
+            for (TextBox t : textboxes) {
+                t.KEYPRESSED(key, (int)keyCode);
+            } break;
+        case inqueue: break;
+        case ingame:
+                      if(keyCode == UP)    arrows[0] = true;
+                      if(keyCode == DOWN)  arrows[1] = true;
+                      if(keyCode == LEFT)  arrows[2] = true;
+                      if(keyCode == RIGHT) arrows[3] = true;
+                      break;
+    }
 }
 
 void keyReleased()
@@ -99,4 +167,12 @@ void keyReleased()
     if(keyCode == DOWN)  { arrows[1] = false; }
     if(keyCode == LEFT)  { arrows[2] = false; }
     if(keyCode == RIGHT) { arrows[3] = false; }
+}
+
+void thread_ingame ()
+{
+    while (true) {
+        print("wut");
+        delay(1000);
+    }
 }
