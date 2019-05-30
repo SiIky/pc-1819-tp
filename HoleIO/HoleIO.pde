@@ -103,6 +103,15 @@ void draw_login ()
 
 void draw_inqueue ()
 {
+    /* TODO: clean the screen or show smth here so we know were waiting */
+    String line = "";
+    do {
+        try {
+            line = in.readLine();
+        } catch (Exception e) {
+            line = "";
+        }
+    } while (!line.equals("enter_match"));
     screen = Screen.ingame;
 }
 
@@ -114,6 +123,7 @@ void mousePressed() {
 
 void draw_ingame ()
 {
+    /* TODO: communicate with the server */
     background(100);
     player.display();
     movePlayer();

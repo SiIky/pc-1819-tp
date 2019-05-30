@@ -7,9 +7,16 @@
         ]).
 
 new(P1, P2) ->
-    io:format("Starting a new match: ~p vs ~p\n", [P1, P2]),
-    spawn(fun() -> match({P1, P2}) end).
+    Match = spawn(fun() -> match({P1, P2}) end),
+    io:format("Starting a new match (~p): ~p vs ~p\n", [Match, P1, P2]),
+    Match.
 
+match({player_left, {P1, P2}, P1}) ->
+    cl:leave_match(P2, self()),
+    mm:match_over(player_left, P2);
+match({player_left, {P1, P2}, P2}) ->
+    cl:leave_match(P1, self()),
+    mm:match_over(P1, player_left);
 match({P1, P2}=Ps) ->
     receive
         stop ->
@@ -24,7 +31,7 @@ match({P1, P2}=Ps) ->
 
 handle_cast(Ps, {abort, P}) ->
     io:format("Player ~p left\n", [P]),
-    Ps;
+    {player_left, Ps, P};
 handle_cast(Ps, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     Ps.

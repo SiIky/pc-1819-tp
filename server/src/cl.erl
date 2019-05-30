@@ -1,6 +1,7 @@
 -module(cl).
 -export([
          enter_match/2,
+         leave_match/2,
          new/1,
          stop/1
         ]).
@@ -20,7 +21,6 @@ auth(Socket) ->
         {tcp, Socket, Msg} ->
             switch(handle_tcp_auth(Socket, Msg));
         {tcp_closed, Socket} ->
-            io:format("Client closed TCP connection before authenticating\n"),
             lm:abort(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
@@ -34,26 +34,24 @@ waiting(Socket) ->
         {cast, Msg} ->
             switch(handle_cast_waiting(Socket, Msg));
         {tcp_closed, Socket} ->
-            io:format("Client closed TCP connection before authenticating\n"),
             mm:abort(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             waiting(Socket)
     end.
 
-ingame({Socket, _}=St) ->
+ingame({Socket, Match}=St) ->
     receive
         stop ->
             close_conn(Socket);
         {cast, Msg} ->
             handle_cast_ingame(St, Msg);
+        {tcp_closed, Socket} ->
+            match:abort(Match, self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             ingame(St)
     end.
-
-enter_match(Player, Match) ->
-    srv:cast(Player, {enter_match, Match}).
 
 handle_tcp_auth(Socket, <<"login:", _Rest/binary>>) ->
     Rest = binary_to_list(_Rest),
@@ -100,14 +98,24 @@ handle_cast_auth(Socket, Msg) ->
     {fun auth/1, Socket}.
 
 handle_cast_waiting(Socket, {enter_match, Match}) ->
+    gen_tcp:send(Socket, "enter_match\n"),
     {fun ingame/1, {Socket, Match}};
 handle_cast_waiting(Socket, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     {fun waiting/1, Socket}.
 
+handle_cast_ingame({Socket, Match}, {leave_match, Match}) ->
+    gen_tcp:send(Socket, "leave_match\n"),
+    {fun waiting/1, Socket};
 handle_cast_ingame(St, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     {fun ingame/1, St}.
+
+leave_match(Player, Match) ->
+    srv:cast(Player, {leave_match, Match}).
+
+enter_match(Player, Match) ->
+    srv:cast(Player, {enter_match, Match}).
 
 stop(Player) ->
     srv:stop(Player).

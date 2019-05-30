@@ -21,7 +21,6 @@ acc(LSock) ->
             Cl = cl:new(Socket),
             case gen_tcp:controlling_process(Socket, Cl) of
                 ok ->
-                    io:format("New client connected\n"),
                     lm:new_client(Cl);
                 {error, Reason} ->
                     cl:stop(Cl),

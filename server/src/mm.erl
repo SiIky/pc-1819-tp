@@ -55,6 +55,12 @@ handle_cast({Ps, Matches}, {abort, Xixa}) ->
     {Ps -- [Xixa], Matches};
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
+handle_cast({Ps, Matches}, {match_over, Match, player_left, player_left}) ->
+    {Ps, Matches -- [Match]};
+handle_cast({Ps, Matches}, {match_over, Match, P1, player_left}) ->
+    {[P1|Ps], Matches -- [Match]};
+handle_cast({Ps, Matches}, {match_over, Match, player_left, P2}) ->
+    {[P2|Ps], Matches -- [Match]};
 handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
     {[P1, P2 | Ps], Matches -- [Match]};
 handle_cast(State, Msg) ->
@@ -68,4 +74,4 @@ carne_pa_canhao(Xixa) ->
     srv:cast(?MODULE, {carne_pa_canhao, Xixa}).
 
 match_over(P1, P2) ->
-    srv:cast({match_over, self(), P1, P2}).
+    srv:cast(?MODULE, {match_over, self(), P1, P2}).
