@@ -46,6 +46,9 @@ void setup()
         exit();
     }
 
+    BGThread bgt = new BGThread();
+    bgt.start();
+
     size(1200, 700);
     //size(800, 600);
 
@@ -194,12 +197,4 @@ void keyReleased ()
     if(keyCode == DOWN)  { arrows[1] = false; }
     if(keyCode == LEFT)  { arrows[2] = false; }
     if(keyCode == RIGHT) { arrows[3] = false; }
-}
-
-void thread_ingame ()
-{
-    while (true) {
-        print("wut");
-        delay(1000);
-    }
 }
