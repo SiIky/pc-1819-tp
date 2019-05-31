@@ -34,7 +34,7 @@ waiting(Socket) ->
         {cast, Msg} ->
             switch(handle_cast_waiting(Socket, Msg));
         {tcp_closed, Socket} ->
-            mm:abort(self());
+            mm:leave_queue(self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             waiting(Socket)
@@ -47,6 +47,7 @@ ingame({Socket, Match}=St) ->
         {cast, Msg} ->
             handle_cast_ingame(St, Msg);
         {tcp_closed, Socket} ->
+            mm:leave_queue(self()),
             match:abort(Match, self());
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),

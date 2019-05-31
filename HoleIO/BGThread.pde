@@ -1,5 +1,12 @@
 class BGThread extends Thread
 {
+    HoleIO.State st;
+
+    public BGThread (HoleIO.State st)
+    {
+        this.st = st;
+    }
+
     public void run ()
     {
         while (true) {
