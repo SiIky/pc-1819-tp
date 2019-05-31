@@ -8,6 +8,8 @@ class State
     String player_name;
     String adversary_name;
 
+    volatile boolean ingame = false;
+
     Ball player;
     Ball adversary;
     int number_of_consumables = 30;

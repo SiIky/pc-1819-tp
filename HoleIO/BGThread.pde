@@ -9,13 +9,16 @@ class BGThread extends Thread
 
     public void run ()
     {
-        while (true) {
-            try {
-                Thread.sleep(1000);
-                System.out.println("wut");
-            } catch (Exception e) {
-                System.out.println("shat");
-            }
+        String line = "";
+        try {
+            do {
+                line = st.in.readLine();
+                System.out.println(line);
+            } while (st.ingame && !line.equals("leave_match"));
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            exit();
         }
     }
 }

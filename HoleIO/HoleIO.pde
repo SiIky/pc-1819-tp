@@ -25,9 +25,6 @@ void setup()
         exit();
     }
 
-    //bgt = new BGThread(st);
-    //bgt.start();
-
     size(1200, 700);
     //size(800, 600);
 
@@ -92,10 +89,13 @@ void draw_inqueue ()
         try {
             line = st.in.readLine();
         } catch (Exception e) {
-            line = "";
+            e.printStackTrace();
+            exit();
         }
     } while (!line.equals("enter_match"));
     st.screen = Screen.ingame;
+    bgt = new BGThread(st);
+    bgt.start();
 }
 
 void mousePressed() {
@@ -179,4 +179,12 @@ void keyReleased ()
     if(keyCode == DOWN)  { st.arrows[1] = false; }
     if(keyCode == LEFT)  { st.arrows[2] = false; }
     if(keyCode == RIGHT) { st.arrows[3] = false; }
+}
+
+void stop ()
+{
+    try {
+        st.sock.close();
+    } catch (Exception e) {
+    }
 }

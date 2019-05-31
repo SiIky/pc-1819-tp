@@ -7,6 +7,8 @@
          % to be used by matches
          match_over/2,
 
+         state/0,
+
          start/0,
          stop/0
         ]).
@@ -47,6 +49,9 @@ mm({Ps, Matches}=State) ->
             io:format("Unexpected message: ~p\n", [Msg])
     end.
 
+handle_call(State, From, state) ->
+    srv:reply(From, State),
+    State;
 handle_call(State, From, _Msg) ->
     srv:reply(From, badargs),
     State.
@@ -75,3 +80,6 @@ carne_pa_canhao(Xixa) ->
 
 match_over(P1, P2) ->
     srv:cast(?MODULE, {match_over, self(), P1, P2}).
+
+state() ->
+    srv:recv(srv:call(?MODULE, state)).
