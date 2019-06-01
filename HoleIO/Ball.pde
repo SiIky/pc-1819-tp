@@ -11,12 +11,21 @@ class Ball
     static final int min_radius = 15;  // min. value possible for the radius
     static final int max_radius = 200;
 
-    Ball(int posx, int posy, boolean is_player_1) {
+    Ball (int posx, int posy, boolean is_player_1)
+    {
         this.posx = posx;
         this.posy = posy;
         this.radius = min_radius;
         this.speed = 5;
         this.is_player_1 = is_player_1;
+    }
+
+    void update_from_str (String str)
+    {
+        String[] parms = str.split(":");
+        this.posx = Integer.parseInt(parms[0]);
+        this.posy = Integer.parseInt(parms[1]);
+        this.radius = Integer.parseInt(parms[2]);
     }
 
     // getters for ball

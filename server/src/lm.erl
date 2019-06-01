@@ -5,7 +5,7 @@
          stop/0,
 
          abort/1,
-         clients_in_preauth/0,
+         state/0,
          create_account/2,
          login/2,
          new_client/1
@@ -29,25 +29,21 @@ init() ->
 lm({_, Preauth}=St) ->
     receive
         stop ->
-            stop(Preauth),
-            ok;
-        {call, {Pid, Ref}=From, Msg}
-          when
-              is_pid(Pid),
-              is_reference(Ref) ->
+            stop(Preauth);
+        {call, From, Msg} ->
             lm(handle_call(St, From, Msg));
         {cast, Msg} ->
             lm(handle_cast(St, Msg))
     end.
 
-handle_call({_, Preauth}=St, From, clients_in_preauth) ->
-    srv:reply(From, Preauth),
+handle_call(St, From, state) ->
+    srv:reply(From, St),
     St;
-handle_call({UPs, _}=St, From, {login, Uname, Passwd}) ->
+handle_call({UPs, Preauth}=St, From, {login, Uname, Passwd}) ->
     case dict:find(Uname, UPs) of
         {ok, Passwd} ->
             srv:reply(From, ok),
-            St;
+            {UPs, Preauth -- [srv:from_pid(From)]};
         _ ->
             srv:reply(From, invalid),
             St
@@ -59,7 +55,7 @@ handle_call({UPs, Preauth}=St, From, {create_account, Uname, Passwd}) ->
             St;
         false ->
             srv:reply(From, ok),
-            {dict:store(Uname, Passwd, UPs), Preauth}
+            {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)]}
     end;
 handle_call(St, From, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
@@ -79,8 +75,8 @@ abort(C) ->
 new_client(C) ->
     srv:cast(?MODULE, {new_client, C}).
 
-clients_in_preauth() ->
-    srv:recv(srv:call(?MODULE, clients_in_preauth)).
+state() ->
+    srv:recv(srv:call(?MODULE, state)).
 
 create_account(Uname, Passwd) ->
     srv:recv(srv:call(?MODULE, {create_account, Uname, Passwd})).

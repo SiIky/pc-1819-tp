@@ -4,12 +4,20 @@ class Food
     int posy;
     int size;
     boolean is_poison;
+    boolean should_draw = true;
 
     Food (int posx, int posy, int size, boolean is_poison) {
         this.posx = posx;
         this.posy = posy;
         this.size = size;
         this.is_poison = is_poison;
+    }
+
+    void update_from_parms (String[] parms)
+    {
+        this.posx = Integer.parseInt(parms[1]);
+        this.posy = Integer.parseInt(parms[2]);
+        this.size = Integer.parseInt(parms[3]);
     }
 
     // getters for position
@@ -31,6 +39,9 @@ class Food
     }
 
     void display() {
+        if (!should_draw)
+            return;
+
         if (this.is_poison) {
             fill(255, 0, 0);
         } else {

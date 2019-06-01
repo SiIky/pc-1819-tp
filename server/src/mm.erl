@@ -5,7 +5,7 @@
          carne_pa_canhao/1,
 
          % to be used by matches
-         match_over/2,
+         match_over/1,
 
          state/0,
 
@@ -22,7 +22,7 @@ stop() ->
     srv:stop(?MODULE).
 
 stop(Ps) ->
-    [ cl:stop(P) || P <- Ps ],
+    [ cl:stop(P) || {P, _} <- Ps ],
     ok.
 
 init() ->
@@ -58,14 +58,8 @@ handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
     {Ps -- [Xixa], Matches};
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
-handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
-    NewPs = case {P1, P2} of
-                {player_left, player_left} -> Ps;
-                {P1,          player_left} -> [P1 | Ps];
-                {player_left, P2}          -> [P2 | Ps];
-                {P1,          P2}          -> [P1, P2 | Ps]
-            end,
-    {NewPs, Matches -- [Match]};
+handle_cast({Ps, Matches}, {match_over, Match}) ->
+    {Ps, Matches -- [Match]};
 handle_cast(State, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     State.
@@ -76,8 +70,8 @@ leave_queue(Xixa) ->
 carne_pa_canhao(Xixa) ->
     srv:cast(?MODULE, {carne_pa_canhao, Xixa}).
 
-match_over(P1, P2) ->
-    srv:cast(?MODULE, {match_over, self(), P1, P2}).
+match_over(Match) ->
+    srv:cast(?MODULE, {match_over, Match}).
 
 state() ->
     srv:recv(srv:call(?MODULE, state)).

@@ -2,6 +2,7 @@
 -export([
          call/2,
          cast/2,
+         from_pid/1,
          recv/1,
          reply/2,
          stop/1
@@ -27,3 +28,8 @@ reply({From, Ref}, Reply) ->
 stop(Who) ->
     Who ! stop,
     ok.
+
+from_pid({Pid, Ref})
+  when is_pid(Pid),
+       is_reference(Ref) ->
+    Pid.

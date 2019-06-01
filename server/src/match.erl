@@ -6,7 +6,7 @@
          stop/1
         ]).
 
-new(P1, P2) ->
+new({P1, Name1}, {P2, Name2}) ->
     Width = 1200,
     Height = 700,
     Map = map:new(Width, Height),
@@ -16,17 +16,17 @@ new(P1, P2) ->
     % list_to_integer/1
 
     Match = spawn(fun() -> match({P1, P2}) end),
-    cl:enter_match(P1, Match, Map, Pos1, Pos2),
-    cl:enter_match(P2, Match, Map, Pos2, Pos1),
+    cl:enter_match(P1, Match, Map, Pos1, Pos2, Name2),
+    cl:enter_match(P2, Match, Map, Pos2, Pos1, Name1),
     io:format("Starting a new match (~p): ~p vs ~p\n", [Match, P1, P2]),
     Match.
 
 match({player_left, {P1, P2}, P1}) ->
     cl:leave_match(P2, self()),
-    mm:match_over(player_left, P2);
+    mm:match_over(self());
 match({player_left, {P1, P2}, P2}) ->
     cl:leave_match(P1, self()),
-    mm:match_over(P1, player_left);
+    mm:match_over(self());
 match({P1, P2}=Ps) ->
     receive
         stop ->

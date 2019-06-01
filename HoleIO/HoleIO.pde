@@ -3,12 +3,6 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
-/*
- * TODO: game state should be in its own class, for easier sharing
- *       between this thread and the networking thread.
- *       No Nestum BS pls though
- */
-
 State st = new State();
 BGThread bgt;
 
@@ -47,9 +41,10 @@ void setup()
 void draw()
 {
     switch (st.screen) {
-        case login: draw_login(); break;
+        case ingame:  draw_ingame(); break;
         case inqueue: draw_inqueue(); break;
-        case ingame: draw_ingame(); break;
+        case login:   draw_login(); break;
+        case leave:   exit(); break;
     }
 }
 
@@ -73,27 +68,7 @@ void draw_login ()
 
 void draw_inqueue ()
 {
-    try {
-        background(100);
-        String line = st.in.readLine();
-        if (line == null)
-            exit();
-        String[] words = line.split(" ");
-
-        if (words[0].equals("enter_match")) {
-            st.player = player_from_str(words[1], true);
-            st.adversary = player_from_str(words[2], false);
-
-            for (int i = 0; i < st.number_of_consumables; i++)
-                st.consumables[i] = consumable_from_str(words[3 + i]);
-
-            st.screen = Screen.ingame;
-            bgt = new BGThread(st);
-            bgt.start();
-        }
-    } catch (Exception e) {
-        exit();
-    }
+    background(100);
 }
 
 void mousePressed() {
@@ -111,13 +86,14 @@ void draw_ingame ()
     movePlayer();
 
     for(int i = 0; i < st.number_of_consumables; i++) {
-        st.consumables[i].display();
+        if (st.consumables[i] != null) {
+            st.consumables[i].display();
 
-        float dist = distance(st.player.getX(), st.player.getY(), st.consumables[i].getX(), st.consumables[i].getY());
-        if (dist < st.player.getRadius()/2 + st.consumables[i].getSize()/2) {
-            st.player.eats(st.consumables[i]); /* we dont care if its poison or not, just eat that */
-            boolean poison_or_not = random(0, 1) > 0.7;
-            st.consumables[i].pick_location(poison_or_not);
+            float dist = distance(st.player.getX(), st.player.getY(), st.consumables[i].getX(), st.consumables[i].getY());
+            if (dist < st.player.getRadius()/2 + st.consumables[i].getSize()/2) {
+                st.player.eats(st.consumables[i]); /* we dont care if its poison or not, just eat that */
+                st.consumables[i].should_draw = false;
+            }
         }
     }
 }
@@ -146,7 +122,7 @@ void keyPressed ()
                     && !textboxes.get(1).Text.equals(""))
             {
                 try {
-                    String line = "login:" + textboxes.get(0).Text + "\t" + textboxes.get(1).Text;
+                    String line = "login " + textboxes.get(0).Text + " " + textboxes.get(1).Text;
                     st.out.println(line);
                     st.out.flush();
 
@@ -154,6 +130,9 @@ void keyPressed ()
                     if (line.equals("ok")) {
                         st.player_name = textboxes.get(0).Text;
                         st.screen = Screen.inqueue;
+
+                        bgt = new BGThread(st);
+                        bgt.start();
                     }
                 } catch (Exception e) {}
             } else {
@@ -161,52 +140,14 @@ void keyPressed ()
                     t.KEYPRESSED(key, keyCode);
             }
             break;
-        case inqueue: break;
         case ingame:
-                      if(keyCode == UP)    st.arrows[0] = true;
-                      if(keyCode == DOWN)  st.arrows[1] = true;
-                      if(keyCode == LEFT)  st.arrows[2] = true;
-                      if(keyCode == RIGHT) st.arrows[3] = true;
-                      break;
+            st.arrowsKeyPressed();
+            break;
+        default: break;
     }
 }
 
 void keyReleased ()
 {
-    if(keyCode == UP)    { st.arrows[0] = false; }
-    if(keyCode == DOWN)  { st.arrows[1] = false; }
-    if(keyCode == LEFT)  { st.arrows[2] = false; }
-    if(keyCode == RIGHT) { st.arrows[3] = false; }
-}
-
-void exit ()
-{
-    try {
-        st.sock.close();
-    } catch (Exception e) {
-    } finally {
-        super.exit();
-    }
-}
-
-Ball player_from_str (String str, boolean is_player_1)
-{
-    String[] parms = str.split(":");
-
-    int x = Integer.parseInt(parms[0]);
-    int y = Integer.parseInt(parms[1]);
-
-    return new Ball(x, y, is_player_1);
-}
-
-Food consumable_from_str (String str)
-{
-    String[] parms = str.split(":");
-
-    int x = Integer.parseInt(parms[0]);
-    int y = Integer.parseInt(parms[1]);
-    int s = Integer.parseInt(parms[2]);
-    boolean is_poison = parms[3].equals("true");
-
-    return new Food(x, y, s, is_poison);
+    st.arrowsKeyReleased();
 }
