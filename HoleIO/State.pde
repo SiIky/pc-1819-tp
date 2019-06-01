@@ -17,5 +17,6 @@ class State
     PrintWriter out;
     // 0 -> up ; 1 -> down; 2 -> left; 3 -> right
     boolean[] arrows = new boolean[4];
-    Screen screen = Screen.login; /* starts in the login screen */
+
+    volatile Screen screen = Screen.login; /* starts in the login screen */
 }

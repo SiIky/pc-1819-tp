@@ -9,7 +9,6 @@
 new(P1, P2) ->
     Width = 1200,
     Height = 700,
-    % (X, Y, S, P)
     Map = map:new(Width, Height),
     [Pos1, Pos2] = map:players(Width, Height),
 

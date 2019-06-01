@@ -62,8 +62,8 @@ handle_cast({Ps, Matches}, {match_over, Match, P1, P2}) ->
     NewPs = case {P1, P2} of
                 {player_left, player_left} -> Ps;
                 {P1,          player_left} -> [P1 | Ps];
-                {player_left, P2} ->          [P2 | Ps];
-                {P1,          P2} ->          [P1, P2 | Ps]
+                {player_left, P2}          -> [P2 | Ps];
+                {P1,          P2}          -> [P1, P2 | Ps]
             end,
     {NewPs, Matches -- [Match]};
 handle_cast(State, Msg) ->

@@ -76,6 +76,8 @@ void draw_inqueue ()
     try {
         background(100);
         String line = st.in.readLine();
+        if (line == null)
+            exit();
         String[] words = line.split(" ");
 
         if (words[0].equals("enter_match")) {
@@ -90,7 +92,6 @@ void draw_inqueue ()
             bgt.start();
         }
     } catch (Exception e) {
-        e.printStackTrace();
         exit();
     }
 }
@@ -106,6 +107,7 @@ void draw_ingame ()
     /* TODO: communicate with the server */
     background(100);
     st.player.display();
+    st.adversary.display();
     movePlayer();
 
     for(int i = 0; i < st.number_of_consumables; i++) {
@@ -124,7 +126,6 @@ void draw_ingame ()
 float distance (int p1x, int p1y, int p2x, int p2y) {
     float p = p2x - p1x;
     float q = p2y - p1y;
-
     return sqrt(p*p + q*q);
 }
 
@@ -178,11 +179,13 @@ void keyReleased ()
     if(keyCode == RIGHT) { st.arrows[3] = false; }
 }
 
-void stop ()
+void exit ()
 {
     try {
         st.sock.close();
     } catch (Exception e) {
+    } finally {
+        super.exit();
     }
 }
 
