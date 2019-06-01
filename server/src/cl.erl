@@ -1,6 +1,6 @@
 -module(cl).
 -export([
-         enter_match/2,
+         enter_match/5,
          leave_match/2,
          new/1,
          stop/1
@@ -98,8 +98,8 @@ handle_cast_auth(Socket, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     {fun auth/1, Socket}.
 
-handle_cast_waiting(Socket, {enter_match, Match}) ->
-    gen_tcp:send(Socket, "enter_match\n"),
+handle_cast_waiting(Socket, {enter_match, Match, Map, Pos, PosAdv}) ->
+    gen_tcp:send(Socket, [ "enter_match ", Pos, " ", PosAdv, " ", Map, "\n" ]),
     {fun ingame/1, {Socket, Match}};
 handle_cast_waiting(Socket, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
@@ -115,8 +115,8 @@ handle_cast_ingame(St, Msg) ->
 leave_match(Player, Match) ->
     srv:cast(Player, {leave_match, Match}).
 
-enter_match(Player, Match) ->
-    srv:cast(Player, {enter_match, Match}).
+enter_match(Player, Match, Map, Pos, PosAdv) ->
+    srv:cast(Player, {enter_match, Match, Map, Pos, PosAdv}).
 
 stop(Player) ->
     srv:stop(Player).

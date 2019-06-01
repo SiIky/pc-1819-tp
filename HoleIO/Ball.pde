@@ -8,7 +8,7 @@ class Ball
 
     boolean is_player_1; // player 1 is controlled by the user; player 2 is the adversary (controlled by someone else)
 
-    static final int min_radius = 30;  // min. value possible for the radius
+    static final int min_radius = 15;  // min. value possible for the radius
     static final int max_radius = 200;
 
     Ball(int posx, int posy, boolean is_player_1) {

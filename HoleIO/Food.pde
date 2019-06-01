@@ -5,10 +5,10 @@ class Food
     int size;
     boolean is_poison;
 
-    Food(boolean is_poison) {
-        this.posx = int(random(30, width - 30));
-        this.posy = int(random(30, height - 30));
-        this.size = int(random(10, 30));
+    Food (int posx, int posy, int size, boolean is_poison) {
+        this.posx = posx;
+        this.posy = posy;
+        this.size = size;
         this.is_poison = is_poison;
     }
 

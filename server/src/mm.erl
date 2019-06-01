@@ -30,8 +30,6 @@ init() ->
 
 mm({[P2, P1 | Rest], Matches}) ->
     Match = match:new(P1, P2),
-    cl:enter_match(P1, Match),
-    cl:enter_match(P2, Match),
     mm({Rest, [Match|Matches]});
 mm({Ps, Matches}=State) ->
     receive

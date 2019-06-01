@@ -14,7 +14,7 @@ class BGThread extends Thread
             do {
                 line = st.in.readLine();
                 System.out.println(line);
-            } while (st.ingame && !line.equals("leave_match"));
+            } while (st.screen == Screen.ingame && !line.equals("leave_match"));
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

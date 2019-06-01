@@ -41,15 +41,6 @@ void setup()
     textboxes.add(userTB);
     textboxes.add(passTB);
 
-    st.player = new Ball(100, 100, true);
-    st.consumables = new Food[st.number_of_consumables];
-
-    /* TODO: this will be done in the server */
-    for(int i = 0; i < st.number_of_consumables; i++) {
-        boolean poison_or_not = random(0, 1) > 0.7; // 30% chance of being poison
-        st.consumables[i] = new Food(poison_or_not);
-    }
-
     frameRate(60);
 }
 
@@ -82,20 +73,26 @@ void draw_login ()
 
 void draw_inqueue ()
 {
-    /* TODO: clean the screen or show smth here so we know were waiting */
-    background(100);
-    String line = "";
-    do {
-        try {
-            line = st.in.readLine();
-        } catch (Exception e) {
-            e.printStackTrace();
-            exit();
+    try {
+        background(100);
+        String line = st.in.readLine();
+        String[] words = line.split(" ");
+
+        if (words[0].equals("enter_match")) {
+            st.player = player_from_str(words[1], true);
+            st.adversary = player_from_str(words[2], false);
+
+            for (int i = 0; i < st.number_of_consumables; i++)
+                st.consumables[i] = consumable_from_str(words[3 + i]);
+
+            st.screen = Screen.ingame;
+            bgt = new BGThread(st);
+            bgt.start();
         }
-    } while (!line.equals("enter_match"));
-    st.screen = Screen.ingame;
-    bgt = new BGThread(st);
-    bgt.start();
+    } catch (Exception e) {
+        e.printStackTrace();
+        exit();
+    }
 }
 
 void mousePressed() {
@@ -187,4 +184,26 @@ void stop ()
         st.sock.close();
     } catch (Exception e) {
     }
+}
+
+Ball player_from_str (String str, boolean is_player_1)
+{
+    String[] parms = str.split(":");
+
+    int x = Integer.parseInt(parms[0]);
+    int y = Integer.parseInt(parms[1]);
+
+    return new Ball(x, y, is_player_1);
+}
+
+Food consumable_from_str (String str)
+{
+    String[] parms = str.split(":");
+
+    int x = Integer.parseInt(parms[0]);
+    int y = Integer.parseInt(parms[1]);
+    int s = Integer.parseInt(parms[2]);
+    boolean is_poison = parms[3].equals("true");
+
+    return new Food(x, y, s, is_poison);
 }

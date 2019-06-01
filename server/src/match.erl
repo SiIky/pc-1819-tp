@@ -7,7 +7,18 @@
         ]).
 
 new(P1, P2) ->
+    Width = 1200,
+    Height = 700,
+    % (X, Y, S, P)
+    Map = map:new(Width, Height),
+    [Pos1, Pos2] = map:players(Width, Height),
+
+    % integer_to_list/1
+    % list_to_integer/1
+
     Match = spawn(fun() -> match({P1, P2}) end),
+    cl:enter_match(P1, Match, Map, Pos1, Pos2),
+    cl:enter_match(P2, Match, Map, Pos2, Pos1),
     io:format("Starting a new match (~p): ~p vs ~p\n", [Match, P1, P2]),
     Match.
 

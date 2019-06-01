@@ -8,12 +8,10 @@ class State
     String player_name;
     String adversary_name;
 
-    volatile boolean ingame = false;
-
     Ball player;
     Ball adversary;
-    int number_of_consumables = 30;
-    Food[] consumables;
+    final int number_of_consumables = 30;
+    Food[] consumables = new Food[number_of_consumables];
     Socket sock;
     BufferedReader in;
     PrintWriter out;
