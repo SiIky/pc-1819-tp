@@ -22,37 +22,43 @@ class State
     Food[] consumables = new Food[number_of_consumables];
 
     /*
+     * Eatten food methods
+     */
+    volatile ArrayList<Integer> eaten = new ArrayList<Integer>();
+    volatile boolean done_eating = false;
+
+    /*
      * Arrows related methods
      */
     boolean[] arrows = new boolean[4]; // 0 -> up ; 1 -> down; 2 -> left; 3 -> right
     ReentrantLock arrowsLock = new ReentrantLock(); /* TODO: try the fairness param */
     void arrowsKeyReleased ()
     {
-        st.arrowsLock.lock();
+        arrowsLock.lock();
         try {
             switch (keyCode) {
-                case UP:    st.arrows[0] = false; break;
-                case DOWN:  st.arrows[1] = false; break;
-                case LEFT:  st.arrows[2] = false; break;
-                case RIGHT: st.arrows[3] = false; break;
+                case UP:    arrows[0] = false; break;
+                case DOWN:  arrows[1] = false; break;
+                case LEFT:  arrows[2] = false; break;
+                case RIGHT: arrows[3] = false; break;
             }
         } finally {
-            st.arrowsLock.unlock();
+            arrowsLock.unlock();
         }
     }
 
     void arrowsKeyPressed ()
     {
-        st.arrowsLock.lock();
+        arrowsLock.lock();
         try {
             switch (keyCode) {
-                case UP:    st.arrows[0] = true; break;
-                case DOWN:  st.arrows[1] = true; break;
-                case LEFT:  st.arrows[2] = true; break;
-                case RIGHT: st.arrows[3] = true; break;
+                case UP:    arrows[0] = true; break;
+                case DOWN:  arrows[1] = true; break;
+                case LEFT:  arrows[2] = true; break;
+                case RIGHT: arrows[3] = true; break;
             }
         } finally {
-            st.arrowsLock.unlock();
+            arrowsLock.unlock();
         }
     }
 }

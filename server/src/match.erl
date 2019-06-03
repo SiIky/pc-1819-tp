@@ -34,10 +34,17 @@ match({P1, P2}=Ps) ->
             cl:stop(P2);
         {cast, Msg} ->
             match(handle_cast(Ps, Msg));
+        {call, From, Msg} ->
+            match(handle_call(Ps, From, Msg));
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             match(Ps)
     end.
+
+handle_call(Ps, From, Msg) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    srv:reply(From, badargs),
+    Ps.
 
 handle_cast(Ps, {abort, P}) ->
     io:format("Player ~p left\n", [P]),

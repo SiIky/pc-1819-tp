@@ -157,9 +157,12 @@ ingame({Socket, _, Match}=St) ->
     end.
 
 % TCP messages handler
+handle_tcp_ingame(St, <<Up:8, Down:8, Left:8, Right:8, " ", Rest/binary>>) ->
+    io:format("Got: ~p ~p ~p ~p ~p\n", [Up, Down, Left, Right, Rest]),
+    {fun ingame/1, St};
 handle_tcp_ingame(St, Msg) ->
     io:format("Unexpected TCP message: ~p\n", [Msg]),
-    {fun auth/1, St}.
+    {fun ingame/1, St}.
 
 % Casts handler
 handle_cast_ingame({Socket, Uname, Match}, {leave_match, Match}) ->

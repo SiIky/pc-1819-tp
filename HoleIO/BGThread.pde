@@ -32,35 +32,49 @@ class BGThread extends Thread
         st.screen = Screen.ingame;
     }
 
-    private void handle_ingame () throws Exception
+    private void handle_ingame ()
     {
-        while (true) {
-            /* TODO: tell the server whats happening on our side */
-            /* TODO: process what the server says happened on the other side */
-            String line = st.in.readLine();
+        String line = "";
+
+        /* TODO: tell the server whats happening on our side */
+        line = arrows_to_string() + " "
+            + eat_player_to_string()
+            + eaten_to_string();
+
+        System.out.println(line);
+        this.st.out.println(line);
+        this.st.out.flush();
+
+        /* TODO: process what the server says happened on the other side */
+        try {
+            line = this.st.in.readLine();
             if (line == null) { /* socket was closed */
                 this.st.screen = Screen.leave;
                 return;
             }
+        } catch (Exception e) {
+            System.out.println("handle_ingame");
+            this.st.screen = Screen.leave;
+            return;
+        }
 
-            System.out.println(line);
+        System.out.println(line);
 
-            if (line.equals("leave_match")) {
-                this.st.screen = Screen.inqueue;
-                return;
-            }
+        if (line.equals("leave_match")) {
+            this.st.screen = Screen.inqueue;
+            return;
+        }
 
-            String words[] = line.split(" ");
+        String words[] = line.split(" ");
 
-            this.st.player.update_from_str(words[0]);
-            this.st.adversary.update_from_str(words[1]);
+        this.st.player.update_from_str(words[0]);
+        this.st.adversary.update_from_str(words[1]);
 
-            int nfood = words.length - 2;
-            for (int i = 0; i < nfood; i++) {
-                String[] parms = words[2 + i].split(":");
-                int fidx = Integer.parseInt(parms[0]);
-                this.st.consumables[fidx].update_from_parms(parms);
-            }
+        int nfood = words.length - 2;
+        for (int i = 0; i < nfood; i++) {
+            String[] parms = words[2 + i].split(":");
+            int fidx = Integer.parseInt(parms[0]);
+            this.st.consumables[fidx].update_from_parms(parms);
         }
     }
 
@@ -68,12 +82,13 @@ class BGThread extends Thread
     {
         try {
             while (this.st.screen != Screen.leave) {
-                switch (st.screen) {
+                switch (this.st.screen) {
                     case ingame:  handle_ingame(); break;
                     case inqueue: handle_inqueue(); break;
                 }
             }
         } catch (Exception e) {
+            System.out.println("run");
             this.st.screen = Screen.leave;
         }
     }
@@ -94,5 +109,46 @@ class BGThread extends Thread
         int s = Integer.parseInt(parms[2]);
         boolean is_poison = parms[3].equals("true");
         return new Food(x, y, s, is_poison);
+    }
+
+    String eaten_to_string ()
+    {
+        String ret = " ";
+        int len = this.st.eaten.size();
+
+        if (len == 0)
+            return "";
+
+        ret = Integer.toString(this.st.eaten.get(0));
+
+        for (int i = 1; i < len - 1; i++)
+            ret = ret + ":" + Integer.toString(this.st.eaten.get(i));
+
+        return ret;
+    }
+
+    String arrows_to_string ()
+    {
+        this.st.arrowsLock.lock();
+        String ret = "";
+        try {
+            ret = ((this.st.arrows[0]) ? "U" : "_")
+                + ((this.st.arrows[1]) ? "D" : "_")
+                + ((this.st.arrows[2]) ? "L" : "_")
+                + ((this.st.arrows[3]) ? "R" : "_");
+        } catch (Exception e) {
+            System.out.println("arrows_to_string");
+        } finally {
+            this.st.arrowsLock.unlock();
+        }
+        return ret;
+    }
+
+    String eat_player_to_string ()
+    {
+        float dist = distance(st.player.getX(), st.player.getY(), st.adversary.getX(), st.adversary.getY());
+        return (dist < st.player.getRadius()/2 + st.adversary.getRadius()/2) ?
+            " p":
+            "";
     }
 }

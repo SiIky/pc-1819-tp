@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 State st = new State();
 BGThread bgt;
 
+float a;
+
 ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 
 void setup()
@@ -36,6 +38,9 @@ void setup()
     textboxes.add(passTB);
 
     frameRate(60);
+
+    stroke(255);
+    a = height/2;
 }
 
 void draw()
@@ -68,13 +73,16 @@ void draw_login ()
 
 void draw_inqueue ()
 {
-    background(100);
+    background(51);
+    line(0, a, width, a);
+    a -= 0.5;
+    if (a < 0)
+        a = height;
 }
 
 void mousePressed() {
-    for (TextBox t : textboxes) {
+    for (TextBox t : textboxes)
         t.PRESSED(mouseX, mouseY);
-    }
 }
 
 void draw_ingame ()
@@ -85,17 +93,23 @@ void draw_ingame ()
     st.adversary.display();
     movePlayer();
 
-    for(int i = 0; i < st.number_of_consumables; i++) {
-        if (st.consumables[i] != null) {
+    ArrayList<Integer> eaten = new ArrayList<Integer>();
+
+    for (int i = 0; i < st.number_of_consumables; i++) {
+        if (st.consumables[i].should_draw) {
             st.consumables[i].display();
 
             float dist = distance(st.player.getX(), st.player.getY(), st.consumables[i].getX(), st.consumables[i].getY());
             if (dist < st.player.getRadius()/2 + st.consumables[i].getSize()/2) {
                 st.player.eats(st.consumables[i]); /* we dont care if its poison or not, just eat that */
                 st.consumables[i].should_draw = false;
+                eaten.add(i);
             }
         }
     }
+
+    this.st.eaten = eaten;
+    this.st.done_eating = true;
 }
 
 // calculates euclidean distance
@@ -107,10 +121,18 @@ float distance (int p1x, int p1y, int p2x, int p2y) {
 
 void movePlayer ()
 {
-    if (st.arrows[0]) st.player.moveY(-1);
-    if (st.arrows[1]) st.player.moveY(+1);
-    if (st.arrows[2]) st.player.moveX(-1);
-    if (st.arrows[3]) st.player.moveX(+1);
+    st.arrowsLock.lock();
+    try {
+        if (st.arrows[0]) st.player.moveY(-1);
+        if (st.arrows[1]) st.player.moveY(+1);
+        if (st.arrows[2]) st.player.moveX(-1);
+        if (st.arrows[3]) st.player.moveX(+1);
+    } catch (Exception e) {
+        System.out.println("movePlayer");
+        st.screen = Screen.leave;
+    } finally {
+        st.arrowsLock.unlock();
+    }
 }
 
 void keyPressed ()
@@ -134,7 +156,10 @@ void keyPressed ()
                         bgt = new BGThread(st);
                         bgt.start();
                     }
-                } catch (Exception e) {}
+                } catch (Exception e) {
+                    System.out.println("keyPressed");
+                    st.screen = Screen.leave;
+                }
             } else {
                 for (TextBox t : textboxes)
                     t.KEYPRESSED(key, keyCode);
