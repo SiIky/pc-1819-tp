@@ -32,7 +32,7 @@ match({player_left, {P1, P2, Timer}, P2}) ->
     Timer ! stop,
     cl:leave_match(P1, self()),
     mm:match_over(self());
-match({times_up, {P1, P2, _, _}}) ->
+match({times_up, {P1, P2}}) ->
     mm:match_over(self()),
     cl:leave_match(P1, self()),
     cl:leave_match(P2, self());
@@ -62,8 +62,8 @@ handle_cast({P1, P2, GS, PCs, Timer}, click) ->
     cl:click(P1, Map, Player1, Player2),
     cl:click(P2, Map, Player2, Player1),
     {P1, P2, NewGS, PCs, Timer};
-handle_cast(St, times_up) ->
-    {times_up, St};
+handle_cast({P1, P2, _, _, _}, times_up) ->
+    {times_up, {P1, P2}};
 handle_cast({P1, P2, _, _, Timer}, {abort, P}) ->
     io:format("Player ~p left\n", [P]),
     {player_left, {P1, P2, Timer}, P};
