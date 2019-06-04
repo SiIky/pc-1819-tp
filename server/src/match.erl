@@ -16,7 +16,7 @@ new({P1, Name1}, {P2, Name2}) ->
     Height = 700,
     [_, _, _] = GS = map:new(Width, Height),
     Timer = spawn(fun timer/0),
-    Match = spawn(fun() -> match({P1, P2, GS, Timer}) end),
+    Match = spawn(fun() -> match({P1, P2, GS, new_pcs(), Timer}) end),
     [SerMap, SerP1, SerP2] = map:to_string(GS),
     cl:enter_match(P1, Match, SerMap, SerP1, SerP2, Name2),
     cl:enter_match(P2, Match, SerMap, SerP2, SerP1, Name1),
@@ -24,17 +24,19 @@ new({P1, Name1}, {P2, Name2}) ->
     Timer ! {match, Match},
     Match.
 
-match({player_left, {P1, P2, _, _}, P1}) ->
+match({player_left, {P1, P2, Timer}, P1}) ->
+    Timer ! stop,
     cl:leave_match(P2, self()),
     mm:match_over(self());
-match({player_left, {P1, P2, _, _}, P2}) ->
+match({player_left, {P1, P2, Timer}, P2}) ->
+    Timer ! stop,
     cl:leave_match(P1, self()),
     mm:match_over(self());
 match({times_up, {P1, P2, _, _}}) ->
     mm:match_over(self()),
     cl:leave_match(P1, self()),
     cl:leave_match(P2, self());
-match({P1, P2, _, Timer}=St) ->
+match({P1, P2, _, _, Timer}=St) ->
     receive
         stop ->
             Timer ! stop,
@@ -54,18 +56,23 @@ handle_call(St, From, Msg) ->
     srv:reply(From, badargs),
     St.
 
-handle_cast({P1, P2, GS, _}=St, click) ->
-    [Map, Player1, Player2] = map:to_string(GS),
+handle_cast({P1, P2, GS, PCs, Timer}, click) ->
+    NewGS = update(GS, PCs),
+    [Map, Player1, Player2] = map:to_string(NewGS),
     cl:click(P1, Map, Player1, Player2),
     cl:click(P2, Map, Player2, Player1),
-    St;
+    {P1, P2, NewGS, PCs, Timer};
 handle_cast(St, times_up) ->
     {times_up, St};
-handle_cast(St, {abort, P}) ->
+handle_cast({P1, P2, _, _, Timer}, {abort, P}) ->
     io:format("Player ~p left\n", [P]),
-    {player_left, St, P};
-handle_cast({P1, P2, GS, Timer}, {act, Player, Action}) ->
-    {P1, P2, update(GS, Player, Action), Timer};
+    {player_left, {P1, P2, Timer}, P};
+handle_cast({P1, P2, GS, {PC1, PC2}, Timer}, {act, Player, Action}) ->
+    NewPC = case Player of
+        P1 -> {update_pc(PC1, Action), PC2};
+        P2 -> {PC1,                    update_pc(PC2, Action)}
+    end,
+    {P1, P2, GS, NewPC, Timer};
 handle_cast(St, Msg) ->
     io:format("match:cast:unexpected ~p\n", [Msg]),
     St.
@@ -94,7 +101,7 @@ timer(Match, Passed)
   when Passed > 60000 -> % 60s
     times_up(Match);
 timer(Match, Passed) ->
-    Int = 1000 / 60, % 1s
+    Int = 16, % 1000 / 60
     receive
         stop ->
             ok
@@ -114,5 +121,21 @@ click(Match) -> srv:cast(Match, click).
 act(Match, Player, Action) ->
     srv:cast(Match, {act, Player, Action}).
 
-update([Map, P1, P2]=GS, Player, Action) ->
+update([_Map, _P1, _P2]=GS, _PCs) ->
     GS.
+
+%%%
+%%% Player controls
+%%%
+new_pcs() ->
+    NewPC = {false, false, false, false},
+    {NewPC, NewPC}.
+
+update_pc({_,  Down, Left, Right}, press_up)      -> {true,  Down,  Left,  Right};
+update_pc({Up, _,    Left, Right}, press_down)    -> {Up,    true,  Left,  Right};
+update_pc({Up, Down, _,    Right}, press_left)    -> {Up,    Down,  true,  Right};
+update_pc({Up, Down, Left, _},     press_right)   -> {Up,    Down,  Left,  true};
+update_pc({_,  Down, Left, Right}, release_up)    -> {false, Down,  Left,  Right};
+update_pc({Up, _,    Left, Right}, release_down)  -> {Up,    false, Left,  Right};
+update_pc({Up, Down, _,    Right}, release_left)  -> {Up,    Down,  false, Right};
+update_pc({Up, Down, Left, _},     release_right) -> {Up,    Down,  Left,  false}.

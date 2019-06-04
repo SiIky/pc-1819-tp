@@ -157,19 +157,19 @@ void keyPressed ()
         case ingame:
             switch (keyCode) {
                 case UP:
-                    st.out.println("UP");
+                    st.out.println("w");
                     st.arrows[0] = true;
                     break;
                 case DOWN:
-                    st.out.println("DOWN");
+                    st.out.println("s");
                     st.arrows[1] = true;
                     break;
                 case LEFT:
-                    st.out.println("LEFT");
+                    st.out.println("a");
                     st.arrows[2] = true;
                     break;
                 case RIGHT:
-                    st.out.println("RIGHT");
+                    st.out.println("d");
                     st.arrows[3] = true;
                     break;
             }
@@ -182,19 +182,19 @@ void keyReleased ()
 {
     switch (keyCode) {
         case UP:
-            st.out.println("UP");
+            st.out.println("W");
             st.arrows[0] = false;
             break;
         case DOWN:
-            st.out.println("DOWN");
+            st.out.println("S");
             st.arrows[1] = false;
             break;
         case LEFT:
-            st.out.println("LEFT");
+            st.out.println("A");
             st.arrows[2] = false;
             break;
         case RIGHT:
-            st.out.println("RIGHT");
+            st.out.println("D");
             st.arrows[3] = false;
             break;
     }

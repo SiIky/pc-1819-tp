@@ -143,7 +143,7 @@ waiting({Socket, Uname}=St) ->
 handle_tcp_waiting(St, <<"leave", _/binary>>) ->
     {fun waiting/1, {leave, St}};
 handle_tcp_waiting(St, Msg) ->
-    io:format("cl:tcp:unexpected ~p\n", [Msg]),
+    io:format("cl:waiting:tcp:unexpected ~p\n", [Msg]),
     {fun waiting/1, St}.
 
 % Casts handler
@@ -180,21 +180,25 @@ ingame({Socket, _, Match}=St) ->
 % TCP messages handler
 handle_tcp_ingame(St, <<"leave", _/binary>>) ->
     {fun ingame/1, {leave, St}};
-handle_tcp_ingame(St, <<"UP\n">>) ->
-    {fun ingame/1, St};
-handle_tcp_ingame(St, <<"DOWN\n">>) ->
-    {fun ingame/1, St};
-handle_tcp_ingame(St, <<"LEFT\n">>) ->
-    {fun ingame/1, St};
-handle_tcp_ingame(St, <<"RIGHT\n">>) ->
-    {fun ingame/1, St};
+
+% Key released
+handle_tcp_ingame({_, _, Match}=St, <<"W\n">>) -> match:act(Match, self(), release_up),    {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"S\n">>) -> match:act(Match, self(), release_down),  {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"A\n">>) -> match:act(Match, self(), release_left),  {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"D\n">>) -> match:act(Match, self(), release_right), {fun ingame/1, St};
+
+% Key pressed
+handle_tcp_ingame({_, _, Match}=St, <<"w\n">>) -> match:act(Match, self(), press_up),      {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"s\n">>) -> match:act(Match, self(), press_down),    {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"a\n">>) -> match:act(Match, self(), press_left),    {fun ingame/1, St};
+handle_tcp_ingame({_, _, Match}=St, <<"d\n">>) -> match:act(Match, self(), press_right),   {fun ingame/1, St};
+
 handle_tcp_ingame(St, Msg) ->
     io:format("cl:ingame:tcp:unexpected ~p\n", [Msg]),
     {fun ingame/1, St}.
 
 % Casts handler
 handle_cast_ingame({Socket, _, _}=St, {click, GS}) ->
-    io:format("~p got click: ~p\n", [self(), GS]),
     gen_tcp:send(Socket, GS),
     {fun ingame/1, St};
 handle_cast_ingame({Socket, Uname, Match}, {leave_match, Match}) ->
