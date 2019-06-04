@@ -40,13 +40,13 @@ class Ball
 
     // moves player on the x axis
     void moveX(int x) {
-        this.posx = this.posx + x * this.speed;
+        this.posx += x * this.speed;
         this.posx = constrain(this.posx, this.radius / 2, width - (this.radius / 2));
     }
 
     // moves player on the y axis
     void moveY(int y) {
-        this.posy = this.posy + y * this.speed;
+        this.posy += y * this.speed;
         this.posy = constrain(this.posy, this.radius / 2, height - (this.radius / 2));
     }
 

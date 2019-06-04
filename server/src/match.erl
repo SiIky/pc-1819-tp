@@ -69,9 +69,9 @@ handle_cast({P1, P2, _, _, Timer}, {abort, P}) ->
     {player_left, {P1, P2, Timer}, P};
 handle_cast({P1, P2, GS, {PC1, PC2}, Timer}, {act, Player, Action}) ->
     NewPC = case Player of
-        P1 -> {update_pc(PC1, Action), PC2};
-        P2 -> {PC1,                    update_pc(PC2, Action)}
-    end,
+                P1 -> {update_pc(PC1, Action), PC2};
+                P2 -> {PC1,                    update_pc(PC2, Action)}
+            end,
     {P1, P2, GS, NewPC, Timer};
 handle_cast(St, Msg) ->
     io:format("match:cast:unexpected ~p\n", [Msg]),
@@ -121,8 +121,11 @@ click(Match) -> srv:cast(Match, click).
 act(Match, Player, Action) ->
     srv:cast(Match, {act, Player, Action}).
 
-update([_Map, _P1, _P2]=GS, _PCs) ->
-    GS.
+update([Map, P1, P2], {PC1, PC2}) ->
+    NewP1 = map:player_move(P1, PC1),
+    NewP2 = map:player_move(P2, PC2),
+    NewMap = map:update(Map, P1, P2),
+    [NewMap, NewP1, NewP2].
 
 %%%
 %%% Player controls

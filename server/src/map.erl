@@ -1,7 +1,14 @@
 -module(map).
 -export([
          new/2,
-         to_string/1
+         to_string/1,
+
+         distance/2,
+         distance/4,
+         in_eating_range/2,
+         in_eating_range/3,
+         player_move/2,
+         update/3
         ]).
 
 new(Width, Height) ->
@@ -52,3 +59,48 @@ food_to_string([I, X, Y, S, P]) ->
 
 player_to_string(P) ->
     lists:join(":", lists:map(fun integer_to_list/1, P)).
+
+% Player/Food
+in_eating_range([Px, Py, Pr], [_, Fx, Fy, Fr, _]) ->
+    in_eating_range({Pr, Fr, distance(Px, Py, Fx, Fy)});
+% Player/Player
+in_eating_range(P1, P2) ->
+    Dist = distance(P1, P2),
+    in_eating_range(P1, P2, Dist).
+
+in_eating_range([_, _, R1], [_, _, R2], Dist) ->
+    in_eating_range({R1, R2, Dist}).
+
+in_eating_range({R1, R2, Dist}) ->
+    Dist < ((R1 / 2) + (R2 / 2)).
+
+
+distance([P1x, P1y, _], [P2x, P2y, _]) ->
+    distance(P1x, P1y, P2x, P2y).
+
+distance(X1, Y1, X2, Y2) ->
+    P = X2 - X1,
+    Q = Y2 - Y1,
+    math:sqrt((P * P) + (Q * Q)).
+
+speed(_) ->
+    5.
+
+bool2num(true) -> 1;
+bool2num(false) -> 0.
+
+player_move(P, {W, S, A, D}) ->
+    player_move(P,
+                (-1 * bool2num(A)) + bool2num(D),
+                (-1 * bool2num(W)) + bool2num(S)).
+
+player_move([X, Y, R], Dx, Dy) ->
+    S = speed(R),
+    [ X + Dx * S, Y + Dy * S, R].
+
+update(Map, _, _) -> Map.
+
+%update(Map, [_, _, P1r], [_, _, P2r])
+%  when P1r >= P2r ->
+%
+%    .
