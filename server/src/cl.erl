@@ -1,5 +1,6 @@
 -module(cl).
 -export([
+         click/4,
          enter_match/6,
          leave_match/2,
          new/1,
@@ -10,16 +11,19 @@
 %%% Public interface
 %%%
 
+click(P, Map, Player, Adv) ->
+    srv:cast(P, {click, [Player, " ", Adv, " ", Map, "\n"]}).
+
 %% @brief Tell a player inqueue that a match is starting
 %% @param Player The player
 %% @param Match The match
 %% @param Map The map with all the edible objects
 %% @param Pos The player's position
 %% @param PosAdv The adversary's position
-%% @param UnameAdv The adversary's username
+%% @param AdvName The adversary's username
 %% @returns ok
-enter_match(Player, Match, Map, Pos, PosAdv, UnameAdv) ->
-    srv:cast(Player, {enter_match, Match, Map, Pos, PosAdv, UnameAdv}).
+enter_match(Player, Match, Map, Pos, PosAdv, AdvName) ->
+    srv:cast(Player, {enter_match, Match, Map, Pos, PosAdv, AdvName}).
 
 %% @brief Tell a player ingame to leave a match
 %% @param Player The player
@@ -57,6 +61,9 @@ switch({F, St}) ->
 %%%
 
 % Messages switch
+auth({leave, Socket}) ->
+    lm:abort(self()),
+    close_conn(Socket);
 auth(Socket) ->
     receive
         stop ->
@@ -66,11 +73,13 @@ auth(Socket) ->
         {tcp_closed, Socket} ->
             lm:abort(self());
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("cl:auth:unexpected ~p\n", [Msg]),
             auth(Socket)
     end.
 
 % TCP messages handler
+handle_tcp_auth(Socket, <<"leave", _/binary>>) ->
+    {fun auth/1, {leave, Socket}};
 handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
     UP = binary_to_list(UPb),
     case string:tokens(UP, " ") of
@@ -105,7 +114,7 @@ handle_tcp_auth(Socket, <<"register ", UPb/binary>>) ->
             {fun auth/1, Socket}
     end;
 handle_tcp_auth(Socket, Msg) ->
-    io:format("Unexpected TCP message: ~p\n", [Msg]),
+    io:format("cl:auth:tcp:unexpected ~p\n", [Msg]),
     {fun auth/1, Socket}.
 
 %%%
@@ -113,26 +122,36 @@ handle_tcp_auth(Socket, Msg) ->
 %%%
 
 % Messages switch
+waiting({leave, {Socket, Uname}}) ->
+    mm:leave_queue({self(), Uname}),
+    close_conn(Socket);
 waiting({Socket, Uname}=St) ->
     receive
         stop ->
             close_conn(Socket);
         {cast, Msg} ->
             switch(handle_cast_waiting(St, Msg));
+        {tcp, Socket, Msg} ->
+            switch(handle_tcp_waiting(St, Msg));
         {tcp_closed, Socket} ->
-            io:format("waiting: closed\n"),
             mm:leave_queue({self(), Uname});
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("cl:unexpected ~p\n", [Msg]),
             waiting(St)
     end.
 
+handle_tcp_waiting(St, <<"leave", _/binary>>) ->
+    {fun waiting/1, {leave, St}};
+handle_tcp_waiting(St, Msg) ->
+    io:format("cl:tcp:unexpected ~p\n", [Msg]),
+    {fun waiting/1, St}.
+
 % Casts handler
-handle_cast_waiting({Socket, Uname}, {enter_match, Match, Map, Pos, PosAdv, UnameAdv}) ->
-    gen_tcp:send(Socket, [ "enter_match ", Pos, " ", PosAdv, " ", UnameAdv, " ", Map, "\n" ]),
+handle_cast_waiting({Socket, Uname}, {enter_match, Match, Map, Player, Adv, AdvName}) ->
+    gen_tcp:send(Socket, [ "enter_match ", Player, " ", Adv, " ", AdvName, " ", Map, "\n" ]),
     {fun ingame/1, {Socket, Uname, Match}};
 handle_cast_waiting(St, Msg) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("cl:waiting:cast:unexpected ~p\n", [Msg]),
     {fun waiting/1, St}.
 
 %%%
@@ -140,35 +159,48 @@ handle_cast_waiting(St, Msg) ->
 %%%
 
 % Messages switch
+ingame({leave, {Socket, _, Match}}) ->
+    match:abort(Match, self()),
+    close_conn(Socket);
 ingame({Socket, _, Match}=St) ->
     receive
         stop ->
             close_conn(Socket);
         {cast, Msg} ->
-            handle_cast_ingame(St, Msg);
+            switch(handle_cast_ingame(St, Msg));
         {tcp, Socket, Msg} ->
             switch(handle_tcp_ingame(St, Msg));
         {tcp_closed, Socket} ->
-            io:format("ingame: closed\n"),
             match:abort(Match, self());
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("cl:ingame:unexpected ~p\n", [Msg]),
             ingame(St)
     end.
 
 % TCP messages handler
-handle_tcp_ingame(St, <<Up:8, Down:8, Left:8, Right:8, " ", Rest/binary>>) ->
-    io:format("Got: ~p ~p ~p ~p ~p\n", [Up, Down, Left, Right, Rest]),
+handle_tcp_ingame(St, <<"leave", _/binary>>) ->
+    {fun ingame/1, {leave, St}};
+handle_tcp_ingame(St, <<"UP\n">>) ->
+    {fun ingame/1, St};
+handle_tcp_ingame(St, <<"DOWN\n">>) ->
+    {fun ingame/1, St};
+handle_tcp_ingame(St, <<"LEFT\n">>) ->
+    {fun ingame/1, St};
+handle_tcp_ingame(St, <<"RIGHT\n">>) ->
     {fun ingame/1, St};
 handle_tcp_ingame(St, Msg) ->
-    io:format("Unexpected TCP message: ~p\n", [Msg]),
+    io:format("cl:ingame:tcp:unexpected ~p\n", [Msg]),
     {fun ingame/1, St}.
 
 % Casts handler
+handle_cast_ingame({Socket, _, _}=St, {click, GS}) ->
+    io:format("~p got click: ~p\n", [self(), GS]),
+    gen_tcp:send(Socket, GS),
+    {fun ingame/1, St};
 handle_cast_ingame({Socket, Uname, Match}, {leave_match, Match}) ->
     gen_tcp:send(Socket, "leave_match\n"),
     mm:carne_pa_canhao({self(), Uname}),
     {fun waiting/1, {Socket, Uname}};
 handle_cast_ingame(St, Msg) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("cl:ingame:cast:unexpected ~p\n", [Msg]),
     {fun ingame/1, St}.

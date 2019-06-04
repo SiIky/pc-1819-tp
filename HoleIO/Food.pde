@@ -1,10 +1,12 @@
 class Food
 {
-    int posx;
-    int posy;
-    int size;
-    boolean is_poison;
-    boolean should_draw = true;
+    int posx = 0;
+    int posy = 0;
+    int size = 0;
+    boolean is_poison = false;
+    boolean should_draw = false;
+
+    Food () {}
 
     Food (int posx, int posy, int size, boolean is_poison) {
         this.posx = posx;
@@ -18,6 +20,8 @@ class Food
         this.posx = Integer.parseInt(parms[1]);
         this.posy = Integer.parseInt(parms[2]);
         this.size = Integer.parseInt(parms[3]);
+        this.is_poison = parms[4].equals("true");
+        this.should_draw = true;
     }
 
     // getters for position

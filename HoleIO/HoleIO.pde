@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 State st = new State();
-BGThread bgt;
+BGThread bgt = new BGThread(st);
 
 float a;
 
@@ -16,9 +16,10 @@ void setup()
         /* TODO: how do we know when the connection goes down? */
         st.sock = new Socket("localhost", 4242);
         st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream()));
-        st.out = new PrintWriter(st.sock.getOutputStream());
+        st.out = new PrintWriter(st.sock.getOutputStream(), true);
     } catch (Exception e) {
-        exit();
+        e.printStackTrace();
+        super.exit();
     }
 
     size(1200, 700);
@@ -87,7 +88,6 @@ void mousePressed() {
 
 void draw_ingame ()
 {
-    /* TODO: communicate with the server */
     background(100);
     st.player.display();
     st.adversary.display();
@@ -121,18 +121,10 @@ float distance (int p1x, int p1y, int p2x, int p2y) {
 
 void movePlayer ()
 {
-    st.arrowsLock.lock();
-    try {
-        if (st.arrows[0]) st.player.moveY(-1);
-        if (st.arrows[1]) st.player.moveY(+1);
-        if (st.arrows[2]) st.player.moveX(-1);
-        if (st.arrows[3]) st.player.moveX(+1);
-    } catch (Exception e) {
-        System.out.println("movePlayer");
-        st.screen = Screen.leave;
-    } finally {
-        st.arrowsLock.unlock();
-    }
+    if (st.arrows[0]) st.player.moveY(-1);
+    if (st.arrows[1]) st.player.moveY(+1);
+    if (st.arrows[2]) st.player.moveX(-1);
+    if (st.arrows[3]) st.player.moveX(+1);
 }
 
 void keyPressed ()
@@ -146,18 +138,15 @@ void keyPressed ()
                 try {
                     String line = "login " + textboxes.get(0).Text + " " + textboxes.get(1).Text;
                     st.out.println(line);
-                    st.out.flush();
 
                     line = st.in.readLine();
                     if (line.equals("ok")) {
                         st.player_name = textboxes.get(0).Text;
                         st.screen = Screen.inqueue;
-
-                        bgt = new BGThread(st);
                         bgt.start();
                     }
                 } catch (Exception e) {
-                    System.out.println("keyPressed");
+                    e.printStackTrace();
                     st.screen = Screen.leave;
                 }
             } else {
@@ -166,7 +155,24 @@ void keyPressed ()
             }
             break;
         case ingame:
-            st.arrowsKeyPressed();
+            switch (keyCode) {
+                case UP:
+                    st.out.println("UP");
+                    st.arrows[0] = true;
+                    break;
+                case DOWN:
+                    st.out.println("DOWN");
+                    st.arrows[1] = true;
+                    break;
+                case LEFT:
+                    st.out.println("LEFT");
+                    st.arrows[2] = true;
+                    break;
+                case RIGHT:
+                    st.out.println("RIGHT");
+                    st.arrows[3] = true;
+                    break;
+            }
             break;
         default: break;
     }
@@ -174,5 +180,37 @@ void keyPressed ()
 
 void keyReleased ()
 {
-    st.arrowsKeyReleased();
+    switch (keyCode) {
+        case UP:
+            st.out.println("UP");
+            st.arrows[0] = false;
+            break;
+        case DOWN:
+            st.out.println("DOWN");
+            st.arrows[1] = false;
+            break;
+        case LEFT:
+            st.out.println("LEFT");
+            st.arrows[2] = false;
+            break;
+        case RIGHT:
+            st.out.println("RIGHT");
+            st.arrows[3] = false;
+            break;
+    }
+}
+
+void exit ()
+{
+    st.screen = Screen.leave;
+    try {
+        bgt.interrupt();
+        bgt.join();
+        st.out.println("leave");
+        st.in.close();
+        st.out.close();
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    System.exit(0);
 }

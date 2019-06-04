@@ -1,1 +1,3 @@
 *.beam
+HoleIO/application*
+*.autosave
