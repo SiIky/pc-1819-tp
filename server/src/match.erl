@@ -12,9 +12,7 @@
 %%%
 
 new({P1, Name1}, {P2, Name2}) ->
-    Width = 1200,
-    Height = 700,
-    [_, _, _] = GS = map:new(Width, Height),
+    [_, _, _] = GS = map:new(),
     Timer = spawn(fun timer/0),
     Match = spawn(fun() -> match({P1, P2, GS, new_pcs(), Timer}) end),
     [SerMap, SerP1, SerP2] = map:to_string(GS),
@@ -56,12 +54,14 @@ handle_call(St, From, Msg) ->
     srv:reply(From, badargs),
     St.
 
+% TODO: Top score
 handle_cast({P1, P2, GS, PCs, Timer}, click) ->
-    NewGS = update(GS, PCs),
-    [Map, Player1, Player2] = map:to_string(NewGS),
-    cl:click(P1, Map, Player1, Player2),
-    cl:click(P2, Map, Player2, Player1),
-    {P1, P2, NewGS, PCs, Timer};
+    {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
+    % Send only the new food to the client
+    [SerMap, SerP1, SerP2] = map:to_string([NewFood, NewP1, NewP2]),
+    cl:click(P1, SerMap, SerP1, SerP2),
+    cl:click(P2, SerMap, SerP2, SerP1),
+    {P1, P2, [NewMap, NewP1, NewP2], PCs, Timer};
 handle_cast({P1, P2, _, _, _}, times_up) ->
     {times_up, {P1, P2}};
 handle_cast({P1, P2, _, _, Timer}, {abort, P}) ->
@@ -122,10 +122,7 @@ act(Match, Player, Action) ->
     srv:cast(Match, {act, Player, Action}).
 
 update([Map, P1, P2], {PC1, PC2}) ->
-    NewP1 = map:player_move(P1, PC1),
-    NewP2 = map:player_move(P2, PC2),
-    NewMap = map:update(Map, P1, P2),
-    [NewMap, NewP1, NewP2].
+    map:update(Map, map:player_move(P1, PC1), map:player_move(P2, PC2)).
 
 %%%
 %%% Player controls

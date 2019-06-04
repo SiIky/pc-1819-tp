@@ -1,6 +1,6 @@
 -module(map).
 -export([
-         new/2,
+         new/0,
          to_string/1,
 
          distance/2,
@@ -10,6 +10,13 @@
          player_move/2,
          update/3
         ]).
+
+min_player_size() -> 15.
+max_player_size() -> 200.
+width() -> 1200.
+height() -> 700.
+
+new() -> new(width(), height()).
 
 new(Width, Height) ->
     {P1, P2} = new_players(Width, Height),
@@ -25,7 +32,7 @@ new_map(Width, Height) ->
 
 new_players(Width, Height) ->
     W2 = floor(Width / 2),
-    S = 15, % player size
+    S = min_player_size(), % player size
     {
      [ rand:uniform(W2     - S) + S,
        rand:uniform(Height - S) + S,
@@ -36,8 +43,6 @@ new_players(Width, Height) ->
        S
      ]
     }.
-
-% lists:map(fun(P) -> player_to_string(P) end, Ret).
 
 new_food(I, Width, Height) ->
     [
@@ -60,20 +65,18 @@ food_to_string([I, X, Y, S, P]) ->
 player_to_string(P) ->
     lists:join(":", lists:map(fun integer_to_list/1, P)).
 
-% Player/Food
-in_eating_range([Px, Py, Pr], [_, Fx, Fy, Fr, _]) ->
+in_eating_range([Px, Py, Pr], [_, Fx, Fy, Fr, _]) -> % Player/Food
     in_eating_range({Pr, Fr, distance(Px, Py, Fx, Fy)});
-% Player/Player
-in_eating_range(P1, P2) ->
-    Dist = distance(P1, P2),
-    in_eating_range(P1, P2, Dist).
+in_eating_range(P1, P2) -> % Player/Player
+    in_eating_range(P1, P2, distance(P1, P2)).
 
+% Player/Player/Distance
 in_eating_range([_, _, R1], [_, _, R2], Dist) ->
     in_eating_range({R1, R2, Dist}).
 
+% Radius/Radius/Distance
 in_eating_range({R1, R2, Dist}) ->
     Dist < ((R1 / 2) + (R2 / 2)).
-
 
 distance([P1x, P1y, _], [P2x, P2y, _]) ->
     distance(P1x, P1y, P2x, P2y).
@@ -98,9 +101,33 @@ player_move([X, Y, R], Dx, Dy) ->
     S = speed(R),
     [ X + Dx * S, Y + Dy * S, R].
 
-update(Map, _, _) -> Map.
+player_eat([_, _, _, Fr, true], [Px, Py, Pr]) ->  [Px, Py, lists:max([Pr - Fr, min_player_size()])];
+player_eat([_, _, _, Fr, false], [Px, Py, Pr]) -> [Px, Py, lists:min([Pr + Fr, max_player_size()])].
 
-%update(Map, [_, _, P1r], [_, _, P2r])
-%  when P1r >= P2r ->
-%
-%    .
+% TODO: Player eating the other player
+player_eat_player([_, _, _]=P1, [_, _, _]=P2) ->
+    {P1, P2}.
+
+update(Map, [_, _, P1r]=P1, [_, _, P2r]=P2)
+  when P1r >= P2r -> % Give the loosing player (P2) a hand
+    {Eaten2, NotEaten2} = lists:partition(fun(F) -> in_eating_range(P2, F) end, Map),
+    {Eaten1, NotEaten1} = lists:partition(fun(F) -> in_eating_range(P1, F) end, NotEaten2),
+    AteP1 = lists:foldl(fun player_eat/2, P1, Eaten1),
+    AteP2 = lists:foldl(fun player_eat/2, P2, Eaten2),
+    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2],
+    NewFood = [ new_food(I, width(), height()) || I <- EatenIdxs ],
+    NewMap = NewFood ++ NotEaten1,
+    {NewP1, NewP2} = player_eat_player(AteP1, AteP2),
+    {NewMap, NewP1, NewP2, NewFood};
+
+update(Map, [_, _, P1r]=P1, [_, _, P2r]=P2)
+  when P1r < P2r -> % Give the loosing player (P1) a hand
+    {Eaten1, NotEaten1} = lists:partition(fun(F) -> in_eating_range(P1, F) end, Map),
+    {Eaten2, NotEaten2} = lists:partition(fun(F) -> in_eating_range(P2, F) end, NotEaten1),
+    AteP1 = lists:foldl(fun player_eat/2, P1, Eaten1),
+    AteP2 = lists:foldl(fun player_eat/2, P2, Eaten2),
+    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2],
+    NewFood = [ new_food(I, width(), height()) || I <- EatenIdxs ],
+    NewMap = NewFood ++ NotEaten2,
+    {NewP1, NewP2} = player_eat_player(AteP1, AteP2),
+    {NewMap, NewP1, NewP2, NewFood}.
