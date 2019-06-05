@@ -40,7 +40,7 @@ class Player
 
     int calc_speed ()
     {
-        return int(150 / this.radius);
+        return ceil(150 / this.radius);
     }
 
     // moves player on the x axis
