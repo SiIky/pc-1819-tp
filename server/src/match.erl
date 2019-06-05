@@ -14,7 +14,7 @@
 new({P1, Name1}, {P2, Name2}) ->
     [_, _, _] = GS = map:new(),
     Timer = spawn(fun timer/0),
-    Match = spawn(fun() -> match({P1, P2, GS, new_pcs(), Timer}) end),
+    Match = spawn(fun() -> match({P1, P2, GS, new_pcs(), Timer, Name1, Name2}) end),
     [SerMap, SerP1, SerP2] = map:to_string(GS),
     cl:enter_match(P1, Match, SerMap, SerP1, SerP2, Name2),
     cl:enter_match(P2, Match, SerMap, SerP2, SerP1, Name1),
@@ -22,19 +22,19 @@ new({P1, Name1}, {P2, Name2}) ->
     Timer ! {match, Match},
     Match.
 
-match({player_left, {P1, P2, Timer}, P1}) ->
+match({player_left, {P1, P2, Timer, S1, S2}, P1}) ->
+    mm:match_over(self(), S1, S2),
     Timer ! stop,
-    cl:leave_match(P2, self()),
-    mm:match_over(self());
-match({player_left, {P1, P2, Timer}, P2}) ->
+    cl:leave_match(P2, self());
+match({player_left, {P1, P2, Timer, S1, S2}, P2}) ->
+    mm:match_over(self(), S1, S2),
     Timer ! stop,
-    cl:leave_match(P1, self()),
-    mm:match_over(self());
-match({times_up, {P1, P2}}) ->
-    mm:match_over(self()),
+    cl:leave_match(P1, self());
+match({times_up, {P1, P2}, S1, S2}) ->
+    mm:match_over(self(), S1, S2),
     cl:leave_match(P1, self()),
     cl:leave_match(P2, self());
-match({P1, P2, _, _, Timer}=St) ->
+match({P1, P2, _, _, Timer, _, _}=St) ->
     receive
         stop ->
             Timer ! stop,
@@ -55,24 +55,24 @@ handle_call(St, From, Msg) ->
     St.
 
 % TODO: Top score
-handle_cast({P1, P2, GS, PCs, Timer}, click) ->
+handle_cast({P1, P2, GS, PCs, Timer, Name1, Name2}, click) ->
     {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
     % Send only the new food to the client
     [SerMap, SerP1, SerP2] = map:to_string([NewFood, NewP1, NewP2]),
     cl:click(P1, SerMap, SerP1, SerP2),
     cl:click(P2, SerMap, SerP2, SerP1),
-    {P1, P2, [NewMap, NewP1, NewP2], PCs, Timer};
-handle_cast({P1, P2, _, _, _}, times_up) ->
-    {times_up, {P1, P2}};
-handle_cast({P1, P2, _, _, Timer}, {abort, P}) ->
+    {P1, P2, [NewMap, NewP1, NewP2], PCs, Timer, Name1, Name2};
+handle_cast({P1, P2, [_, [_, _, R1], [_, _, R2]], _, _, Name1, Name2}, times_up) ->
+    {times_up, {P1, P2}, {R1, Name1}, {R2, Name2}};
+handle_cast({P1, P2, [_, [_, _, R1], [_, _, R2]], _, Timer, Name1, Name2}, {abort, P}) ->
     io:format("Player ~p left\n", [P]),
-    {player_left, {P1, P2, Timer}, P};
-handle_cast({P1, P2, GS, {PC1, PC2}, Timer}, {act, Player, Action}) ->
+    {player_left, {P1, P2, Timer, {R1, Name1}, {R2, Name2}}, P};
+handle_cast({P1, P2, GS, {PC1, PC2}, Timer, Name1, Name2}, {act, Player, Action}) ->
     NewPC = case Player of
                 P1 -> {update_pc(PC1, Action), PC2};
                 P2 -> {PC1,                    update_pc(PC2, Action)}
             end,
-    {P1, P2, GS, NewPC, Timer};
+    {P1, P2, GS, NewPC, Timer, Name1, Name2};
 handle_cast(St, Msg) ->
     io:format("match:cast:unexpected ~p\n", [Msg]),
     St.
@@ -98,7 +98,7 @@ timer() ->
     end.
 
 timer(Match, Passed)
-  when Passed > 60000 -> % 60s
+  when Passed > 5000 -> % 60s
     times_up(Match);
 timer(Match, Passed) ->
     Int = 16, % 1000 / 60

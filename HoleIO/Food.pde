@@ -13,14 +13,6 @@ class Food
         this.posy = posy;
         this.size = size;
         this.is_poison = is_poison;
-    }
-
-    void update_from_parms (String[] parms)
-    {
-        this.posx = Integer.parseInt(parms[1]);
-        this.posy = Integer.parseInt(parms[2]);
-        this.size = Integer.parseInt(parms[3]);
-        this.is_poison = parms[4].equals("true");
         this.should_draw = true;
     }
 

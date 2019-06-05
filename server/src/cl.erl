@@ -4,7 +4,8 @@
          enter_match/6,
          leave_match/2,
          new/1,
-         stop/1
+         stop/1,
+         updated_scores/2
         ]).
 
 %%%
@@ -44,6 +45,9 @@ new(Socket) ->
 stop(Player) ->
     srv:stop(Player).
 
+updated_scores(Player, Score) ->
+    srv:cast(Player, {updated_scores, Score}).
+
 %%%
 %%% Private functions
 %%%
@@ -61,9 +65,6 @@ switch({F, St}) ->
 %%%
 
 % Messages switch
-auth({leave, Socket}) ->
-    lm:abort(self()),
-    close_conn(Socket);
 auth(Socket) ->
     receive
         stop ->
@@ -78,8 +79,6 @@ auth(Socket) ->
     end.
 
 % TCP messages handler
-handle_tcp_auth(Socket, <<"leave", _/binary>>) ->
-    {fun auth/1, {leave, Socket}};
 handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
     UP = binary_to_list(UPb),
     case string:tokens(UP, " ") of
@@ -122,9 +121,6 @@ handle_tcp_auth(Socket, Msg) ->
 %%%
 
 % Messages switch
-waiting({leave, {Socket, Uname}}) ->
-    mm:leave_queue({self(), Uname}),
-    close_conn(Socket);
 waiting({Socket, Uname}=St) ->
     receive
         stop ->
@@ -140,13 +136,15 @@ waiting({Socket, Uname}=St) ->
             waiting(St)
     end.
 
-handle_tcp_waiting(St, <<"leave", _/binary>>) ->
-    {fun waiting/1, {leave, St}};
 handle_tcp_waiting(St, Msg) ->
     io:format("cl:waiting:tcp:unexpected ~p\n", [Msg]),
     {fun waiting/1, St}.
 
 % Casts handler
+handle_cast_waiting({_Socket, _}=St, {updated_scores, _Score}) ->
+    % TODO: Send the client the updated scores
+    %gen_tcp:send(Socket, ["updated_scores ", Score, "\n"])
+    {fun waiting/1, St};
 handle_cast_waiting({Socket, Uname}, {enter_match, Match, Map, Player, Adv, AdvName}) ->
     gen_tcp:send(Socket, [ "enter_match ", Player, " ", Adv, " ", AdvName, " ", Map, "\n" ]),
     {fun ingame/1, {Socket, Uname, Match}};
@@ -159,9 +157,6 @@ handle_cast_waiting(St, Msg) ->
 %%%
 
 % Messages switch
-ingame({leave, {Socket, _, Match}}) ->
-    match:abort(Match, self()),
-    close_conn(Socket);
 ingame({Socket, _, Match}=St) ->
     receive
         stop ->
@@ -178,9 +173,6 @@ ingame({Socket, _, Match}=St) ->
     end.
 
 % TCP messages handler
-handle_tcp_ingame(St, <<"leave", _/binary>>) ->
-    {fun ingame/1, {leave, St}};
-
 % Key released
 handle_tcp_ingame({_, _, Match}=St, <<"W\n">>) -> match:act(Match, self(), release_up),    {fun ingame/1, St};
 handle_tcp_ingame({_, _, Match}=St, <<"S\n">>) -> match:act(Match, self(), release_down),  {fun ingame/1, St};

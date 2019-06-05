@@ -32,7 +32,7 @@ class BGThread extends Thread
             for (int i = 0; i < this.st.number_of_consumables; i++) {
                 String[] parms = words[4 + i].split(":");
                 int fidx = Integer.parseInt(parms[0]);
-                this.st.consumables[fidx].update_from_parms(parms);
+                this.st.consumables[fidx] = food_from_parms(parms);
             }
 
             st.screen = Screen.ingame;
@@ -65,7 +65,7 @@ class BGThread extends Thread
             for (int i = 0; i < nfood; i++) {
                 String[] parms = words[2 + i].split(":");
                 int fidx = Integer.parseInt(parms[0]);
-                this.st.consumables[fidx].update_from_parms(parms);
+                this.st.consumables[fidx] = food_from_parms(parms);
             }
         } catch (Exception e) {
             this.should_run = false;
@@ -96,5 +96,14 @@ class BGThread extends Thread
         int x = Integer.parseInt(parms[0]);
         int y = Integer.parseInt(parms[1]);
         return new Ball(x, y, is_player_1);
+    }
+
+    Food food_from_parms (String[] parms)
+    {
+        return new Food(
+                Integer.parseInt(parms[1]),
+                Integer.parseInt(parms[2]),
+                Integer.parseInt(parms[3]),
+                parms[4].equals("true"));
     }
 }

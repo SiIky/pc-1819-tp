@@ -205,8 +205,6 @@ void exit ()
     st.screen = Screen.leave;
     try {
         bgt.interrupt();
-        bgt.join();
-        st.out.println("leave");
         st.in.close();
         st.out.close();
     } catch (Exception e) {

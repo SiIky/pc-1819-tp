@@ -101,12 +101,24 @@ player_move([X, Y, R], Dx, Dy) ->
     S = speed(R),
     [ X + Dx * S, Y + Dy * S, R].
 
+% Assume food is in range
 player_eat([_, _, _, Fr, true], [Px, Py, Pr]) ->  [Px, Py, lists:max([Pr - Fr, min_player_size()])];
 player_eat([_, _, _, Fr, false], [Px, Py, Pr]) -> [Px, Py, lists:min([Pr + Fr, max_player_size()])].
 
-% TODO: Player eating the other player
-player_eat_player([_, _, _]=P1, [_, _, _]=P2) ->
-    {P1, P2}.
+player_eat_player([_, _, R]=P1, [_, _, R]=P2) ->
+    {P1, P2};
+player_eat_player([_, _, P1r]=P1, [_, _, P2r]=P2)
+  when P1r > P2r ->
+    case in_eating_range(P1, P2) of
+        true -> {P1, P2}; % TODO:
+        false -> {P1, P2}
+    end;
+player_eat_player([_, _, P1r]=P1, [_, _, P2r]=P2)
+  when P2r > P1r ->
+    case in_eating_range(P1, P2) of
+        true -> {P1, P2}; % TODO:
+        false -> {P1, P2}
+    end.
 
 update(Map, [_, _, P1r]=P1, [_, _, P2r]=P2)
   when P1r >= P2r -> % Give the loosing player (P2) a hand
