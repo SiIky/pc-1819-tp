@@ -4,12 +4,10 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 PFont font;
-String time = "60";
-int ts;
-final int interval = 60;
-int game_start_time = 0;
+String time = "";
+final int interval = 120;
 
-State st = new State(); // 
+State st = new State(); //
 BGThread bgt = new BGThread(st);
 
 float a;
@@ -82,7 +80,6 @@ void draw_login ()
 
 void draw_inqueue ()
 {
-    game_start_time = millis();
     background(51);
     line(0, a, width, a);
     a -= 0.5;
@@ -95,11 +92,18 @@ void mousePressed() {
         t.PRESSED(mouseX, mouseY);
 }
 
+float absdiff (int x, int y)
+{
+    return float((x < y) ?
+        y - x:
+        x - y);
+}
+
 void draw_ingame ()
 {
     background(100);
-   
-    st.player.display(); 
+
+    st.player.display();
     st.adversary.display();
     movePlayer();
 
@@ -115,11 +119,16 @@ void draw_ingame ()
         }
     }
 
+    /* Player eats player */
+    float dist = distance(st.player.getX(), st.player.getY(), st.adversary.getX(), st.adversary.getY());
+    if (dist < st.player.getRadius()/2 + st.adversary.getRadius()/2)
+        st.player.eat_player(st.adversary);
+
     /* draw counter */
-    ts = interval - int((millis() - game_start_time) / 1000);
+    int ts = interval - int((millis() - st.game_start_time) / 1000);
     time = nf(ts, 3);
     fill(255);
-    text(time, width - 120, 80);
+    text(time, width / 2, 80);
 }
 
 // calculates euclidean distance
@@ -176,8 +185,8 @@ void keyPressed ()
                     st.out.println("s");
                     st.arrows[1] = true;
                     break;
-                case 'A':
                 case LEFT:
+                case 'A':
                     st.out.println("a");
                     st.arrows[2] = true;
                     break;

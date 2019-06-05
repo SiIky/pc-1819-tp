@@ -35,6 +35,7 @@ class BGThread extends Thread //background thread
                 this.st.consumables[fidx] = food_from_parms(parms);
             }
 
+            st.game_start_time = millis();
             st.screen = Screen.ingame; //update to ingame
         } catch (Exception e) {
             this.should_run = false;
@@ -90,12 +91,12 @@ class BGThread extends Thread //background thread
         }
     }
 
-    Ball ball_from_str (String str, boolean is_player_1) // construct ball from information received from server.
+    Player ball_from_str (String str, boolean is_player_1) // construct ball from information received from server.
     {
         String[] parms = str.split(":");
         int x = Integer.parseInt(parms[0]);
         int y = Integer.parseInt(parms[1]);
-        return new Ball(x, y, is_player_1);
+        return new Player(x, y, is_player_1);
     }
 
     Food food_from_parms (String[] parms)

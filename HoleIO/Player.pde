@@ -1,4 +1,4 @@
-class Ball
+class Player
 {
     int posx;  // position on the x axis
     int posy;  // position on the y axis
@@ -11,7 +11,7 @@ class Ball
     static final int min_radius = 15;  // min. value possible for the radius
     static final int max_radius = 200;
 
-    Ball (int posx, int posy, boolean is_player_1) //ball constructor
+    Player (int posx, int posy, boolean is_player_1) //ball constructor
     {
         this.posx = posx;
         this.posy = posy;
@@ -81,5 +81,11 @@ class Ball
         }
         fill(0, 0, 0);
         ellipse(this.posx, this.posy, this.radius, this.radius);
+    }
+
+    void eat_player (Player adv)
+    {
+        if (this.radius + int(adv.getRadius()/4) <= max_radius)
+            this.radius += int(adv.getRadius()/4);
     }
 }

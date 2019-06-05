@@ -6,6 +6,7 @@ import java.net.Socket;
 class State
 {
     volatile Screen screen = Screen.login; /* starts in the login screen */
+    volatile int game_start_time = 0;
 
     Socket sock;
     BufferedReader in; //receive from server
@@ -14,8 +15,8 @@ class State
     String player_name;
     String adversary_name;
 
-    Ball player; 
-    Ball adversary;
+    Player player;
+    Player adversary;
 
     final int number_of_consumables = 30;
     Food[] consumables = new Food[number_of_consumables]; //create empty food array
