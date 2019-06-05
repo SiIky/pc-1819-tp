@@ -19,7 +19,7 @@ class Register
         BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
         PrintWriter out = new PrintWriter(sock.getOutputStream());
 
-        String line = "register:" + args[0] + "\t" + args[1];
+        String line = "register " + args[0] + " " + args[1];
         out.println(line);
         out.flush();
 

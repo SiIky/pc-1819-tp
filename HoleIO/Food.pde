@@ -17,10 +17,11 @@ class Food
 
     void update_from_parms (String[] parms)
     {
+         //0 for index
         this.posx = Integer.parseInt(parms[1]);
         this.posy = Integer.parseInt(parms[2]);
         this.size = Integer.parseInt(parms[3]);
-        this.is_poison = parms[4].equals("true");
+        this.is_poison = parms[4].equals("true"); //makes an edible poison if server sends true on parm[4]
         this.should_draw = true;
     }
 

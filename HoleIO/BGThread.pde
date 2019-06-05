@@ -1,4 +1,4 @@
-class BGThread extends Thread
+class BGThread extends Thread //background thread
 {
     HoleIO.State st;
 
@@ -12,30 +12,30 @@ class BGThread extends Thread
     private void handle_inqueue ()
     {
         try {
-            String line = st.in.readLine();
+            String line = st.in.readLine(); //reads the line receive from server
             if (line == null) { /* socket was closed */
-                this.st.screen = Screen.leave;
+                this.st.screen = Screen.leave; //if there's nothing exit.
                 return;
             }
 
-            System.out.println(line);
+            System.out.println(line); 
 
-            String[] words = line.split(" ");
+            String[] words = line.split(" "); //insert in array elements by space
 
-            if (!words[0].equals("enter_match"))
+            if (!words[0].equals("enter_match")) //if its not enter match, exit
                 return;
 
-            this.st.player    = ball_from_str(words[1], true);
-            this.st.adversary = ball_from_str(words[2], false);
-            this.st.adversary_name = words[3];
+            this.st.player    = ball_from_str(words[1], true); //receives word from server and converts it to player ball object
+            this.st.adversary = ball_from_str(words[2], false); // "" adversary ball obj
+            this.st.adversary_name = words[3]; // to draw adv name
 
             for (int i = 0; i < this.st.number_of_consumables; i++) {
-                String[] parms = words[4 + i].split(":");
-                int fidx = Integer.parseInt(parms[0]);
-                this.st.consumables[fidx].update_from_parms(parms);
+                String[] parms = words[4 + i].split(":"); // parse food info from server into array
+                int fidx = Integer.parseInt(parms[0]); // parse food index into array to know which obj was eaten
+                this.st.consumables[fidx].update_from_parms(parms); //
             }
 
-            st.screen = Screen.ingame;
+            st.screen = Screen.ingame; //update to ingame
         } catch (Exception e) {
             this.should_run = false;
             return;
@@ -58,13 +58,13 @@ class BGThread extends Thread
 
             String words[] = line.split(" ");
 
-            this.st.player.update_from_str(words[0]);
-            this.st.adversary.update_from_str(words[1]);
+            this.st.player.update_from_str(words[0]); // when ingame receive info from server to update size, position etc.
+            this.st.adversary.update_from_str(words[1]); //same  but for adv
 
-            int nfood = words.length - 2;
+            int nfood = words.length - 2; //number of food positions
             for (int i = 0; i < nfood; i++) {
-                String[] parms = words[2 + i].split(":");
-                int fidx = Integer.parseInt(parms[0]);
+                String[] parms = words[2 + i].split(":"); //parse into array food arguments
+                int fidx = Integer.parseInt(parms[0]); //same as before
                 this.st.consumables[fidx].update_from_parms(parms);
             }
         } catch (Exception e) {
@@ -76,9 +76,9 @@ class BGThread extends Thread
     public void run ()
     {
         try {
-            while (this.should_run) {
-                switch (this.st.screen) {
-                    case ingame:  handle_ingame(); break;
+            while (this.should_run) { //while there's no exception
+                switch (this.st.screen) { //evaluate game state
+                    case ingame:  handle_ingame(); break; 
                     case inqueue: handle_inqueue(); break;
                     default: return;
                 }
@@ -90,7 +90,7 @@ class BGThread extends Thread
         }
     }
 
-    Ball ball_from_str (String str, boolean is_player_1)
+    Ball ball_from_str (String str, boolean is_player_1) // construct ball from information received from server.
     {
         String[] parms = str.split(":");
         int x = Integer.parseInt(parms[0]);
