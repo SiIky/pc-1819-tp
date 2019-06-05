@@ -3,7 +3,12 @@ import java.io.BufferedReader;
 import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
-State st = new State();
+PFont font;
+String time = "60";
+int t;
+int interval = 60;
+
+State st = new State(); // 
 BGThread bgt = new BGThread(st);
 
 float a;
@@ -14,11 +19,13 @@ void setup()
 {
     try {
         /* TODO: how do we know when the connection goes down? */
-        st.sock = new Socket("localhost", 4242);
-        st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream()));
-        st.out = new PrintWriter(st.sock.getOutputStream(), true);
+        st.sock = new Socket("localhost", 4242); //creates socket on port 4242
+        st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream())); //init reads from server
+        st.out = new PrintWriter(st.sock.getOutputStream(), true); //init writes to server
+        font = createFont("Arial", 60);
+        textFont(font);
     } catch (Exception e) {
-        e.printStackTrace();
+        e.printStackTrace(); //case exception, leave program
         super.exit();
     }
 
@@ -89,11 +96,20 @@ void mousePressed() {
 void draw_ingame ()
 {
     background(100);
-    st.player.display();
+   
+    t = interval - int(millis() / 1000);
+    time = nf(t, 3);
+    if (t == 0) {
+      exit();
+    }
+    text(time, width - 120, 80);
+
+    
+    st.player.display(); 
     st.adversary.display();
     movePlayer();
 
-    ArrayList<Integer> eaten = new ArrayList<Integer>();
+    ArrayList<Integer> eaten = new ArrayList<Integer>(); //array list because we dont know how many were eaten
 
     for (int i = 0; i < st.number_of_consumables; i++) {
         if (st.consumables[i].should_draw) {
@@ -133,17 +149,17 @@ void keyPressed ()
         case login:
             if (keyCode == ENTER
                     && !textboxes.get(0).Text.equals("")
-                    && !textboxes.get(1).Text.equals(""))
+                    && !textboxes.get(1).Text.equals("")) //case id and pw are not empty
             {
                 try {
                     String line = "login " + textboxes.get(0).Text + " " + textboxes.get(1).Text;
-                    st.out.println(line);
+                    st.out.println(line); //sends login request info to server
 
                     line = st.in.readLine();
                     if (line.equals("ok")) {
                         st.player_name = textboxes.get(0).Text;
                         st.screen = Screen.inqueue;
-                        bgt.start();
+                        bgt.start(); //new thread to receive text from server
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -151,24 +167,28 @@ void keyPressed ()
                 }
             } else {
                 for (TextBox t : textboxes)
-                    t.KEYPRESSED(key, keyCode);
+                    t.KEYPRESSED(key, keyCode); //if login is invalid continue.
             }
             break;
         case ingame:
             switch (keyCode) {
-                case UP:
+                case UP :
+                case 'W' :
                     st.out.println("w");
                     st.arrows[0] = true;
                     break;
                 case DOWN:
+                case 'S':
                     st.out.println("s");
                     st.arrows[1] = true;
                     break;
+                case 'A':
                 case LEFT:
                     st.out.println("a");
                     st.arrows[2] = true;
                     break;
                 case RIGHT:
+                case 'D':
                     st.out.println("d");
                     st.arrows[3] = true;
                     break;
@@ -182,18 +202,22 @@ void keyReleased ()
 {
     switch (keyCode) {
         case UP:
+        case 'W':
             st.out.println("W");
             st.arrows[0] = false;
             break;
         case DOWN:
+        case 'S':
             st.out.println("S");
             st.arrows[1] = false;
             break;
         case LEFT:
+        case 'A':
             st.out.println("A");
             st.arrows[2] = false;
             break;
         case RIGHT:
+        case 'D':
             st.out.println("D");
             st.arrows[3] = false;
             break;
