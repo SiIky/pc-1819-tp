@@ -15,6 +15,7 @@
         ]).
 
 start() ->
+    ok = ts:start(),
     Pid = spawn(fun() -> mm(init()) end),
     register(?MODULE, Pid),
     ok.

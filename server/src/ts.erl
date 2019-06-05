@@ -23,32 +23,29 @@ ts(Scores) ->
         {cast, Msg} ->
             ts(handle_cast(Scores, Msg));
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("ts:ts:unexpected: ~p\n", [Msg]),
             ts(Scores)
     end.
 
-handle_call([H|_]=Scores, From, top_score) ->
-    srv:reply(From, H),
-    Scores;
-handle_call([]=Scores, From, top_score) ->
-    srv:reply(From, no_top_score),
+handle_call(Scores, From, top_score) ->
+    srv:reply(From, Scores),
     Scores;
 handle_call(Scores, From, Msg) ->
     srv:reply(From, unexpected),
     io:format("Unexpected message: ~p\n", [Msg]),
     Scores.
 
-handle_cast(Scores, {new_score, S}) ->
-    Ret = take(5, insert(Scores, S)),
-    SerScore = scores_to_string(Ret),
+handle_cast(Scores, {new_score, CRLH}) ->
+    NewScores = take(5, insert(Scores, CRLH)),
+    SerScore = scores_to_string(NewScores),
     mm:updated_scores(SerScore),
-    Ret;
+    NewScores;
 handle_cast(Scores, Msg) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("ts:cast:unexpected: ~p\n", [Msg]),
     Scores.
 
-new_score(S) ->
-    srv:cast(?MODULE, {new_score, S}).
+new_score(CRLH) ->
+    srv:cast(?MODULE, {new_score, CRLH}).
 
 top_score() ->
     srv:recv(srv:call(?MODULE, top_score)).
@@ -64,4 +61,4 @@ insert([H|T], SP) ->
 take(N, L) -> lists:sublist(L, N).
 
 scores_to_string(Scores) ->
-    lists:join(" ", lists:map(fun({S, N}) -> [ integer_to_list(S), ":", N] end, Scores)).
+    lists:join(" ", lists:map(fun({CRLH, N}) -> [ integer_to_list(CRLH), ":", N] end, Scores)).

@@ -5,8 +5,9 @@ import java.io.InputStreamReader;
 
 PFont font;
 String time = "60";
-int t;
-int interval = 60;
+int ts;
+final int interval = 60;
+int game_start_time = 0;
 
 State st = new State(); // 
 BGThread bgt = new BGThread(st);
@@ -81,6 +82,7 @@ void draw_login ()
 
 void draw_inqueue ()
 {
+    game_start_time = millis();
     background(51);
     line(0, a, width, a);
     a -= 0.5;
@@ -97,14 +99,6 @@ void draw_ingame ()
 {
     background(100);
    
-    t = interval - int(millis() / 1000);
-    time = nf(t, 3);
-    if (t == 0) {
-      exit();
-    }
-    text(time, width - 120, 80);
-
-    
     st.player.display(); 
     st.adversary.display();
     movePlayer();
@@ -126,6 +120,12 @@ void draw_ingame ()
 
     this.st.eaten = eaten;
     this.st.done_eating = true;
+
+    /* draw counter */
+    ts = interval - int((millis() - game_start_time) / 1000);
+    time = nf(ts, 3);
+    fill(255);
+    text(time, width - 120, 80);
 }
 
 // calculates euclidean distance
