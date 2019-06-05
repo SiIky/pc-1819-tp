@@ -26,12 +26,5 @@ class State
             consumables[i] = new Food(); // fill consumable array with food constructor
     }
 
-    /*
-     * Eatten food methods
-     */
-     //volatile - flushes the variable result to avoid data race.
-    volatile ArrayList<Integer> eaten = new ArrayList<Integer>(); // eaten foods -> volatile is useful so that there're no inconsistencies between users.
-    volatile boolean done_eating = false;
-
     volatile boolean[] arrows = new boolean[4]; // 0 -> up ; 1 -> down; 2 -> left; 3 -> right
 }

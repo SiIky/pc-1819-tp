@@ -103,8 +103,6 @@ void draw_ingame ()
     st.adversary.display();
     movePlayer();
 
-    ArrayList<Integer> eaten = new ArrayList<Integer>(); //array list because we dont know how many were eaten
-
     for (int i = 0; i < st.number_of_consumables; i++) {
         if (st.consumables[i].should_draw) {
             st.consumables[i].display();
@@ -113,13 +111,9 @@ void draw_ingame ()
             if (dist < st.player.getRadius()/2 + st.consumables[i].getSize()/2) {
                 st.player.eats(st.consumables[i]); /* we dont care if its poison or not, just eat that */
                 st.consumables[i].should_draw = false;
-                eaten.add(i);
             }
         }
     }
-
-    this.st.eaten = eaten;
-    this.st.done_eating = true;
 
     /* draw counter */
     ts = interval - int((millis() - game_start_time) / 1000);
