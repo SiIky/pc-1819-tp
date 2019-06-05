@@ -91,8 +91,8 @@ distance(X1, Y1, X2, Y2) ->
     Q = Y2 - Y1,
     math:sqrt((P * P) + (Q * Q)).
 
-speed(_) ->
-    5.
+speed(R) ->
+    ceil(150 / R).
 
 bool2num(true) -> 1;
 bool2num(false) -> 0.

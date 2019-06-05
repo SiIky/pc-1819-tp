@@ -38,15 +38,20 @@ class Player
     void setY(int posy) { this.posy = posy; }
     void setRadius(int radius) { this.radius = radius; }
 
+    int calc_speed ()
+    {
+        return int(150 / this.radius);
+    }
+
     // moves player on the x axis
     void moveX(int x) {
-        this.posx += x * this.speed;
+        this.posx += x * calc_speed();
         this.posx = constrain(this.posx, this.radius / 2, width - (this.radius / 2));
     }
 
     // moves player on the y axis
     void moveY(int y) {
-        this.posy += y * this.speed;
+        this.posy += y * calc_speed();
         this.posy = constrain(this.posy, this.radius / 2, height - (this.radius / 2));
     }
 
