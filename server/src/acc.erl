@@ -5,7 +5,7 @@
         ]).
 
 -define(DEFAULT_PORT, 4242).
-
+%%tells 
 start() ->
     {ok, LSock} = gen_tcp:listen(?DEFAULT_PORT ,[binary,{packet,line},{reuseaddr,true}]),
     Pid = spawn(fun() -> acc(LSock) end),
