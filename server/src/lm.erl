@@ -5,9 +5,9 @@
          stop/0,
 
          abort/1,
-         state/0,
          create_account/2,
          login/2,
+         logout/1,
          new_client/1
         ]).
 
@@ -24,9 +24,9 @@ stop(Preauth) ->
     ok.
 
 init() ->
-    {dict:new(), []}.
+    {dict:new(), [], sets:new()}.
 
-lm({_, Preauth}=St) ->
+lm({_, Preauth, _}=St) ->
     receive
         stop ->
             stop(Preauth);
@@ -36,36 +36,41 @@ lm({_, Preauth}=St) ->
             lm(handle_cast(St, Msg))
     end.
 
-handle_call(St, From, state) ->
-    srv:reply(From, St),
-    St;
-handle_call({UPs, Preauth}=St, From, {login, Uname, Passwd}) ->
+handle_call({UPs, Preauth, Online}=St, From, {login, Uname, Passwd}) ->
     case dict:find(Uname, UPs) of
         {ok, Passwd} ->
-            srv:reply(From, ok),
-            {UPs, Preauth -- [srv:from_pid(From)]};
+            case sets:is_element(Uname, Online) of
+                true ->
+                    srv:reply(From, already_logged_in),
+                    {UPs, Preauth, Online};
+                false ->
+                    srv:reply(From, ok),
+                    {UPs, Preauth -- [srv:from_pid(From)], sets:add_element(Uname, Online)}
+            end;
         _ ->
             srv:reply(From, invalid),
             St
     end;
-handle_call({UPs, Preauth}=St, From, {create_account, Uname, Passwd}) ->
+handle_call({UPs, Preauth, Online}=St, From, {create_account, Uname, Passwd}) ->
     case dict:is_key(Uname, UPs) of
         true ->
             srv:reply(From, user_exists),
             St;
         false ->
             srv:reply(From, ok),
-            {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)]}
+            {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)], Online}
     end;
 handle_call(St, From, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     srv:reply(From, unexpected),
     St.
 
-handle_cast({UPs, Preauth}, {new_client, C}) ->
-    {UPs, [C|Preauth]};
-handle_cast({UPs, Preauth}, {abort, C}) ->
-    {UPs, Preauth -- [C]};
+handle_cast({UPs, Preauth, Online}, {logout, Uname}) ->
+    {UPs, Preauth, sets:del_element(Uname, Online)};
+handle_cast({UPs, Preauth, Online}, {new_client, C}) ->
+    {UPs, [C|Preauth], Online};
+handle_cast({UPs, Preauth, Online}, {abort, C}) ->
+    {UPs, Preauth -- [C], Online};
 handle_cast(St, _Msg) ->
     St.
 
@@ -75,11 +80,11 @@ abort(C) ->
 new_client(C) ->
     srv:cast(?MODULE, {new_client, C}).
 
-state() ->
-    srv:recv(srv:call(?MODULE, state)).
-
 create_account(Uname, Passwd) ->
     srv:recv(srv:call(?MODULE, {create_account, Uname, Passwd})).
 
 login(Uname, Passwd) ->
     srv:recv(srv:call(?MODULE, {login, Uname, Passwd})).
+
+logout(Uname) ->
+    srv:cast(?MODULE, {logout, Uname}).

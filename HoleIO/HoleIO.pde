@@ -17,7 +17,6 @@ ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 void setup()
 {
     try {
-        /* TODO: how do we know when the connection goes down? */
         st.sock = new Socket("localhost", 4242); //creates socket on port 4242
         st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream())); //init reads from server
         st.out = new PrintWriter(st.sock.getOutputStream(), true); //init writes to server
@@ -95,8 +94,8 @@ void mousePressed() {
 float absdiff (int x, int y)
 {
     return float((x < y) ?
-        y - x:
-        x - y);
+            y - x:
+            x - y);
 }
 
 void draw_ingame ()
@@ -155,14 +154,22 @@ void keyPressed ()
                     && !textboxes.get(1).Text.equals("")) //case id and pw are not empty
             {
                 try {
-                    String line = "login " + textboxes.get(0).Text + " " + textboxes.get(1).Text;
+                    String line = "login " + textboxes.get(0).Text + "\t" + textboxes.get(1).Text;
                     st.out.println(line); //sends login request info to server
 
                     line = st.in.readLine();
+
+                    if (line == null) { /* socket was closed */
+                        this.st.screen = Screen.leave; //if there's nothing exit.
+                        return;
+                    }
+
                     if (line.equals("ok")) {
                         st.player_name = textboxes.get(0).Text;
                         st.screen = Screen.inqueue;
                         bgt.start(); //new thread to receive text from server
+                    } else {
+                        System.out.println(line);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -203,6 +210,9 @@ void keyPressed ()
 
 void keyReleased ()
 {
+    if (st.screen != Screen.ingame)
+        return;
+
     switch (keyCode) {
         case UP:
         case 'W':
@@ -229,13 +239,6 @@ void keyReleased ()
 
 void exit ()
 {
-    st.screen = Screen.leave;
-    try {
-        bgt.interrupt();
-        st.in.close();
-        st.out.close();
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-    System.exit(0);
+    bgt.interrupt();
+    super.exit();
 }

@@ -54,7 +54,6 @@ handle_call(St, From, Msg) ->
     srv:reply(From, badargs),
     St.
 
-% TODO: Top score
 handle_cast({P1, P2, GS, PCs, Timer, Name1, Name2}, click) ->
     {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
     % Send only the new food to the client

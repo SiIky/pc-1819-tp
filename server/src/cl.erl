@@ -81,7 +81,7 @@ auth(Socket) ->
 % TCP messages handler
 handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
     UP = binary_to_list(UPb),
-    case string:tokens(UP, " ") of
+    case string:tokens(UP, "\t") of
         [Uname, Passwd] ->
             case lm:login(Uname, Passwd) of
                 ok ->
@@ -90,6 +90,9 @@ handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
                     {fun waiting/1, {Socket, Uname}};
                 invalid ->
                     gen_tcp:send(Socket, "invalid\n"),
+                    {fun auth/1, Socket};
+                already_logged_in ->
+                    gen_tcp:send(Socket, "already_logged_in\n"),
                     {fun auth/1, Socket}
             end;
         _ ->
@@ -98,7 +101,7 @@ handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
     end;
 handle_tcp_auth(Socket, <<"register ", UPb/binary>>) ->
     UP = binary_to_list(UPb),
-    case string:tokens(UP, " ") of
+    case string:tokens(UP, "\t") of
         [Uname, Passwd] ->
             case lm:create_account(Uname, Passwd) of
                 ok ->
@@ -130,6 +133,7 @@ waiting({Socket, Uname}=St) ->
         {tcp, Socket, Msg} ->
             switch(handle_tcp_waiting(St, Msg));
         {tcp_closed, Socket} ->
+            lm:logout(Uname),
             mm:leave_queue({self(), Uname});
         Msg ->
             io:format("cl:unexpected ~p\n", [Msg]),
@@ -157,7 +161,7 @@ handle_cast_waiting(St, Msg) ->
 %%%
 
 % Messages switch
-ingame({Socket, _, Match}=St) ->
+ingame({Socket, Uname, Match}=St) ->
     receive
         stop ->
             close_conn(Socket);
@@ -166,6 +170,7 @@ ingame({Socket, _, Match}=St) ->
         {tcp, Socket, Msg} ->
             switch(handle_tcp_ingame(St, Msg));
         {tcp_closed, Socket} ->
+            lm:logout(Uname),
             match:abort(Match, self());
         Msg ->
             io:format("cl:ingame:unexpected ~p\n", [Msg]),

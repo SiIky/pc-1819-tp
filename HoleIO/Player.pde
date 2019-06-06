@@ -4,7 +4,6 @@ class Player
     int posy;  // position on the y axis
 
     int radius;  // value increases when ball "eats" an object
-    int speed;   // dependends on parameter radius
 
     boolean is_player_1; // player 1 is controlled by the user; player 2 is the adversary (controlled by someone else)
 
@@ -16,7 +15,6 @@ class Player
         this.posx = posx;
         this.posy = posy;
         this.radius = min_radius;
-        this.speed = 5;
         this.is_player_1 = is_player_1;
     }
 
@@ -40,37 +38,35 @@ class Player
 
     int calc_speed ()
     {
-        return int(150 / this.radius);
+        return floor(150 / this.radius) + 5;
     }
 
     // moves player on the x axis
-    void moveX(int x) {
-        this.posx += x * calc_speed();
-        this.posx = constrain(this.posx, this.radius / 2, width - (this.radius / 2));
+    void moveX (int x)
+    {
+        this.posx = constrain(this.posx + x * calc_speed(), floor(this.radius / 2), width - floor(this.radius / 2));
     }
 
     // moves player on the y axis
-    void moveY(int y) {
-        this.posy += y * calc_speed();
-        this.posy = constrain(this.posy, this.radius / 2, height - (this.radius / 2));
+    void moveY (int y)
+    {
+        this.posy = constrain(this.posy + y * calc_speed(), floor(this.radius / 2), height - floor(this.radius / 2));
     }
 
     // eats a poison consumable
-    private void eats_poison(Food poison) {
-        if (this.radius - poison.getSize() < min_radius) { ; }
-        else { this.radius -= poison.getSize(); }
+    private void eats_poison (Food poison)
+    {
+        this.radius = constrain(this.radius - poison.getSize(), min_radius, max_radius);
     }
 
     // eats an edible consumable
-    private void eats_food(Food consumable) {
-        if (this.radius + consumable.getSize() > max_radius) { ; }
-        else { this.radius += consumable.getSize(); }
-
-        // to do: change speed //
-        //this.speed = 10;
+    private void eats_food (Food consumable)
+    {
+        this.radius = constrain(this.radius + consumable.getSize(), min_radius, max_radius);
     }
 
-    void eats (Food consumable) {
+    void eats (Food consumable)
+    {
         if (consumable.is_poison())
             this.eats_poison(consumable);
         else
@@ -78,19 +74,18 @@ class Player
     }
 
     // prints object to screen
-    void display() {
-        if (is_player_1) {
+    void display ()
+    {
+        if (this.is_player_1)
             stroke(0, 0, 255);
-        } else {
+        else
             stroke(255, 0, 0);
-        }
         fill(0, 0, 0);
         ellipse(this.posx, this.posy, this.radius, this.radius);
     }
 
     void eat_player (Player adv)
     {
-        if (this.radius + int(adv.getRadius()/4) <= max_radius)
-            this.radius += int(adv.getRadius()/4);
+        this.radius = constrain(this.radius + int(adv.getRadius()/4), min_radius, max_radius);
     }
 }

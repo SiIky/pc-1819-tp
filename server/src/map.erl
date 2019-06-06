@@ -92,7 +92,16 @@ distance(X1, Y1, X2, Y2) ->
     math:sqrt((P * P) + (Q * Q)).
 
 speed(R) ->
-    ceil(150 / R).
+    floor(150 / R) + 5.
+
+constrain(X, Min, _)
+  when X =< Min->
+    Min;
+constrain(X, _, Max)
+  when X >= Max->
+    Max;
+constrain(X, _, _) ->
+    X.
 
 bool2num(true) -> 1;
 bool2num(false) -> 0.
@@ -104,17 +113,24 @@ player_move(P, {W, S, A, D}) ->
 
 player_move([X, Y, R], Dx, Dy) ->
     S = speed(R),
-    [ X + Dx * S, Y + Dy * S, R].
+    [
+     constrain(X + Dx * S, floor(R/2), width()  - floor(R/2)),
+     constrain(Y + Dy * S, floor(R/2), height() - floor(R/2)),
+     R
+    ].
 
 % Assume food is in range
 player_eat([P1x, P1y, P1r], [_, _, P2r]) ->
-    NP2x = rand:uniform(width() - min_player_size()) + min_player_size(),
-    NP2y = rand:uniform(height() - min_player_size()) + min_player_size(),
-    NewP1 = [ P1x, P1y, lists:min([P1r + ceil(P2r / 4), max_player_size()]) ],
-    NewP2 = [ NP2x, NP2y, lists:max([P2r - ceil(P2r / 4), min_player_size()]) ],
+    NP2r = lists:max([P2r - ceil(P2r / 4), min_player_size()]),
+    NP2x = rand:uniform(width() - NP2r) + NP2r,
+    NP2y = rand:uniform(height() - NP2r) + NP2r,
+    NewP1 = [ P1x, P1y, lists:min([P1r + floor(P2r / 4), max_player_size()]) ],
+    NewP2 = [ NP2x, NP2y, NP2r ],
     {NewP1, NewP2};
-player_eat([_, _, _, Fr, true],  [Px, Py, Pr]) -> [Px, Py, lists:max([Pr - Fr, min_player_size()])];
-player_eat([_, _, _, Fr, false], [Px, Py, Pr]) -> [Px, Py, lists:min([Pr + Fr, max_player_size()])].
+player_eat([_, _, _, Fr, true],  [Px, Py, Pr]) ->
+    [Px, Py, lists:max([Pr - Fr, min_player_size()])];
+player_eat([_, _, _, Fr, false], [Px, Py, Pr]) ->
+    [Px, Py, lists:min([Pr + Fr, max_player_size()])].
 
 player_eat_player([_, _, R]=P1, [_, _, R]=P2) ->
     {P1, P2};
