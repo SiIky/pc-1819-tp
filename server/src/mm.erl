@@ -15,6 +15,7 @@
         ]).
 
 start() ->
+    ok = ts:start(),
     Pid = spawn(fun() -> mm(init()) end),
     register(?MODULE, Pid),
     ok.
@@ -63,7 +64,6 @@ handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
 handle_cast({Ps, Matches}, {match_over, Match, S1, S2}) ->
-    % TODO: yunowork
     ts:new_score(S1),
     ts:new_score(S2),
     {Ps, Matches -- [Match]};

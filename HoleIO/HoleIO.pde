@@ -4,11 +4,10 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 PFont font;
-String time = "60";
-int t;
-int interval = 60;
+String time = "";
+final int interval = 120;
 
-State st = new State(); // 
+State st = new State(); //
 BGThread bgt = new BGThread(st);
 
 float a;
@@ -18,7 +17,6 @@ ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 void setup()
 {
     try {
-        /* TODO: how do we know when the connection goes down? */
         st.sock = new Socket("localhost", 4242); //creates socket on port 4242
         st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream())); //init reads from server
         st.out = new PrintWriter(st.sock.getOutputStream(), true); //init writes to server
@@ -93,23 +91,20 @@ void mousePressed() {
         t.PRESSED(mouseX, mouseY);
 }
 
+float absdiff (int x, int y)
+{
+    return float((x < y) ?
+            y - x:
+            x - y);
+}
+
 void draw_ingame ()
 {
     background(100);
-   
-    t = interval - int(millis() / 1000);
-    time = nf(t, 3);
-    if (t == 0) {
-      exit();
-    }
-    text(time, width - 120, 80);
 
-    
-    st.player.display(); 
+    st.player.display();
     st.adversary.display();
     movePlayer();
-
-    ArrayList<Integer> eaten = new ArrayList<Integer>(); //array list because we dont know how many were eaten
 
     for (int i = 0; i < st.number_of_consumables; i++) {
         if (st.consumables[i].should_draw) {
@@ -119,13 +114,20 @@ void draw_ingame ()
             if (dist < st.player.getRadius()/2 + st.consumables[i].getSize()/2) {
                 st.player.eats(st.consumables[i]); /* we dont care if its poison or not, just eat that */
                 st.consumables[i].should_draw = false;
-                eaten.add(i);
             }
         }
     }
 
-    this.st.eaten = eaten;
-    this.st.done_eating = true;
+    /* Player eats player */
+    float dist = distance(st.player.getX(), st.player.getY(), st.adversary.getX(), st.adversary.getY());
+    if (dist < st.player.getRadius()/2 + st.adversary.getRadius()/2)
+        st.player.eat_player(st.adversary);
+
+    /* draw counter */
+    int ts = interval - int((millis() - st.game_start_time) / 1000);
+    time = nf(ts, 3);
+    fill(255);
+    text(time, width / 2, 80);
 }
 
 // calculates euclidean distance
@@ -152,14 +154,22 @@ void keyPressed ()
                     && !textboxes.get(1).Text.equals("")) //case id and pw are not empty
             {
                 try {
-                    String line = "login " + textboxes.get(0).Text + " " + textboxes.get(1).Text;
+                    String line = "login " + textboxes.get(0).Text + "\t" + textboxes.get(1).Text;
                     st.out.println(line); //sends login request info to server
 
                     line = st.in.readLine();
+
+                    if (line == null) { /* socket was closed */
+                        this.st.screen = Screen.leave; //if there's nothing exit.
+                        return;
+                    }
+
                     if (line.equals("ok")) {
                         st.player_name = textboxes.get(0).Text;
                         st.screen = Screen.inqueue;
                         bgt.start(); //new thread to receive text from server
+                    } else {
+                        System.out.println(line);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -182,8 +192,8 @@ void keyPressed ()
                     st.out.println("s");
                     st.arrows[1] = true;
                     break;
-                case 'A':
                 case LEFT:
+                case 'A':
                     st.out.println("a");
                     st.arrows[2] = true;
                     break;
@@ -200,6 +210,9 @@ void keyPressed ()
 
 void keyReleased ()
 {
+    if (st.screen != Screen.ingame)
+        return;
+
     switch (keyCode) {
         case UP:
         case 'W':
@@ -226,13 +239,6 @@ void keyReleased ()
 
 void exit ()
 {
-    st.screen = Screen.leave;
-    try {
-        bgt.interrupt();
-        st.in.close();
-        st.out.close();
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-    System.exit(0);
+    bgt.interrupt();
+    super.exit();
 }

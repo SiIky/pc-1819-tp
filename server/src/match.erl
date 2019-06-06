@@ -54,7 +54,6 @@ handle_call(St, From, Msg) ->
     srv:reply(From, badargs),
     St.
 
-% TODO: Top score
 handle_cast({P1, P2, GS, PCs, Timer, Name1, Name2}, click) ->
     {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
     % Send only the new food to the client
@@ -92,23 +91,24 @@ timer() ->
         stop ->
             ok;
         {match, Match} ->
-            timer(Match, 0);
+            timer(Match, (2 * 60 * 1000) - 7000); % 2min
         Msg ->
             io:format("timer:unexpected ~p\n", [Msg])
     end.
 
 timer(Match, Passed)
-  when Passed > 5000 -> % 60s
+  when Passed =< 0 ->
     times_up(Match);
 timer(Match, Passed) ->
     Int = 16, % 1000 / 60
     receive
-        stop ->
-            ok
+        stop -> ok;
+        Msg ->
+            io:format("timer:unexpected ~p\n", [Msg])
     after
         Int ->
             click(Match),
-            timer(Match, Passed + Int)
+            timer(Match, Passed - Int)
     end.
 
 times_up(Match) -> srv:cast(Match, times_up).

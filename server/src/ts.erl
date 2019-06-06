@@ -23,28 +23,26 @@ ts(Scores) ->
         {cast, Msg} ->
             ts(handle_cast(Scores, Msg));
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("ts:ts:unexpected: ~p\n", [Msg]),
             ts(Scores)
     end.
 
-handle_call([H|_]=Scores, From, top_score) ->
-    srv:reply(From, H),
-    Scores;
-handle_call([]=Scores, From, top_score) ->
-    srv:reply(From, no_top_score),
+handle_call(Scores, From, top_score) ->
+    srv:reply(From, Scores),
     Scores;
 handle_call(Scores, From, Msg) ->
     srv:reply(From, unexpected),
     io:format("Unexpected message: ~p\n", [Msg]),
     Scores.
 
-handle_cast(Scores, {new_score, S}) ->
-    Ret = take(5, insert(Scores, S)),
-    SerScore = scores_to_string(Ret),
+handle_cast(Scores, {new_score, {_, N}=S}) ->
+    ScoresNoNS = lists:filter(fun({_, PN}) -> PN =/= N end, Scores),
+    NewScores = take(5, insert(ScoresNoNS, S)),
+    SerScore = scores_to_string(NewScores),
     mm:updated_scores(SerScore),
-    Ret;
+    NewScores;
 handle_cast(Scores, Msg) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("ts:cast:unexpected: ~p\n", [Msg]),
     Scores.
 
 new_score(S) ->
