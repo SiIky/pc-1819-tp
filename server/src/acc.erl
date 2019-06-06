@@ -33,7 +33,7 @@ acc(LSock) ->
             handle_msgs(LSock);
         {error, timeout} -> handle_msgs(LSock);
         {error, _}=E -> E
-    end.´
+    end.
 
 %% if there're any messages received, process them, else go to acceptor.
 
