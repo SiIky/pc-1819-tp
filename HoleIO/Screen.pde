@@ -3,4 +3,5 @@ enum Screen {
     inqueue,
     leave,
     login,
+    end_game,
 };

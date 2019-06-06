@@ -16,7 +16,7 @@ all: $(REL) $(ASSETS)
 	pandoc -f markdown -t latex $< -o $@
 
 %.png: %.gv
-	dot -Tpng $< -o $@
+	dot -Gdpi=1000 -Tpng $< -o $@
 
 clean:
 	$(RM) $(ASSETS) $(REL)

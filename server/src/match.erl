@@ -2,6 +2,7 @@
 -export([
          abort/2,
          act/3,
+         leave_endgame/2,
 
          new/2,
          stop/1
@@ -23,17 +24,28 @@ new({P1, Name1}, {P2, Name2}) ->
     Match.
 
 match({player_left, {P1, P2, Timer, _, S2}, P1}) ->
-    mm:match_over(self(), S2),
+    mm:match_over(S2),
     Timer ! stop,
-    cl:leave_match(P2, self());
+    cl:leave_match(P2, self()),
+    match({endgame, [ P1 ]});
 match({player_left, {P1, P2, Timer, S1, _}, P2}) ->
-    mm:match_over(self(), S1),
+    mm:match_over(S1),
     Timer ! stop,
-    cl:leave_match(P1, self());
-match({times_up, {P1, P2}, S1, S2}) ->
-    mm:match_over(self(), S1, S2),
     cl:leave_match(P1, self()),
-    cl:leave_match(P2, self());
+    match({endgame, [ P2 ]});
+match({times_up, {P1, P2}, S1, S2}) ->
+    mm:match_over(S1, S2),
+    cl:leave_match(P1, self()),
+    cl:leave_match(P2, self()),
+    match({endgame, [ P1, P2 ] });
+match({endgame, []}) ->
+    mm:leave_endgame(self()),
+    ok;
+match({endgame, _}=St) ->
+    receive
+        {cast, Msg} ->
+            match(handle_cast(St, Msg))
+    end;
 match({P1, P2, _, _, Timer, _, _}=St) ->
     receive
         stop ->
@@ -54,6 +66,8 @@ handle_call(St, From, Msg) ->
     srv:reply(From, badargs),
     St.
 
+handle_cast({endgame, Ps}, {leave_endgame, P}) ->
+    {endgame, Ps -- [P]};
 handle_cast({P1, P2, GS, PCs, Timer, Name1, Name2}, click) ->
     {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
     % Send only the new food to the client
@@ -91,7 +105,8 @@ timer() ->
         stop ->
             ok;
         {match, Match} ->
-            timer(Match, (2 * 60 * 1000) - 7000); % 2min
+            timer(Match, 10 * 1000); % 2min
+        %timer(Match, (2 * 60 * 1000) - 7000); % 2min
         Msg ->
             io:format("timer:unexpected ~p\n", [Msg])
     end.
@@ -123,6 +138,9 @@ act(Match, Player, Action) ->
 
 update([Map, P1, P2], {PC1, PC2}) ->
     map:update(Map, map:player_move(P1, PC1), map:player_move(P2, PC2)).
+
+leave_endgame(Match, P) ->
+    srv:cast(Match, {leave_endgame, P}).
 
 %%%
 %%% Player controls

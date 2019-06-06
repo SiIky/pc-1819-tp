@@ -53,7 +53,7 @@ class BGThread extends Thread //background thread
             System.out.println(line);
 
             if (line.equals("leave_match")) {
-                this.st.screen = Screen.inqueue;
+                this.st.screen = Screen.end_game;
                 return;
             }
 
@@ -74,13 +74,18 @@ class BGThread extends Thread //background thread
         }
     }
 
+    void handle_end_game ()
+    {
+    }
+
     public void run ()
     {
         try {
             while (this.st.screen != Screen.leave) { //while there's no exception
                 switch (this.st.screen) { //evaluate game state
-                    case ingame:  handle_ingame(); break; 
-                    case inqueue: handle_inqueue(); break;
+                    case ingame:   handle_ingame(); break;
+                    case inqueue:  handle_inqueue(); break;
+                    case end_game: handle_end_game(); break;
                     default: return;
                 }
             }

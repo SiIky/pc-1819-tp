@@ -198,10 +198,38 @@ handle_tcp_ingame(St, Msg) ->
 handle_cast_ingame({Socket, _, _}=St, {click, GS}) ->
     gen_tcp:send(Socket, GS),
     {fun ingame/1, St};
-handle_cast_ingame({Socket, Uname, Match}, {leave_match, Match}) ->
+handle_cast_ingame({Socket, _, Match}=St, {leave_match, Match}) ->
     gen_tcp:send(Socket, "leave_match\n"),
-    mm:carne_pa_canhao({self(), Uname}),
-    {fun waiting/1, {Socket, Uname}};
+    {fun endgame/1, St};
 handle_cast_ingame(St, Msg) ->
     io:format("cl:ingame:cast:unexpected ~p\n", [Msg]),
     {fun ingame/1, St}.
+
+%%%
+%%% End game
+%%%
+
+endgame({Socket, _, Match}=St) ->
+    receive
+        {tcp, Socket, Msg} ->
+            switch(handle_tcp_endgame(St, Msg));
+        {tcp_closed, Socket} ->
+            match:leave_endgame(Match, self()),
+            ok;
+        {cast, Msg} ->
+            switch(handle_cast_endgame(St, Msg));
+        Msg ->
+            io:format("cl:endgame:unexpected ~p\n", [Msg])
+    end.
+
+handle_tcp_endgame({Socket, Uname, Match}, <<"enqueue\n">>) ->
+    match:leave_endgame(Match, self()),
+    mm:carne_pa_canhao({self(), Uname}),
+    {fun waiting/1, {Socket, Uname}};
+handle_tcp_endgame(St, Msg) ->
+    io:format("cl:endgame:tcp:unexpected ~p\n", [Msg]),
+    {fun endgame/1, St}.
+
+handle_cast_endgame(St, Msg) ->
+    io:format("cl:endgame:cast:unexpected ~p\n", [Msg]),
+    {fun endgame/1, St}.

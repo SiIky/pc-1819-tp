@@ -1,15 +1,15 @@
->>>#Programação Concorrente
+>>># Programação Concorrente
 
 
-##Trabalho Prático - HoleIO
+## Trabalho Prático - HoleIO
 
-###Grupo 19
+### Grupo 19
 * André Sá A76361
 * Jaime Santos A71739
 * Paulo Barbosa A81480
 
 
-#1 - Introdução
+# 1 - Introdução
 Este relatório tem como objetivo documentar a implementação do trabalho prático sugerido pelo docente da UC Programação Concorrente. Este divide-se em duas partes, um cliente e um servidor.
 
 Do lado do cliente, foi implementada uma interface gráfica em java (Processing) onde é desenhado um espaço 2D, limitado nos 4 lados preenchido por objetos comestiveis e por ambos os jogadores. Todos os avatares presentes são em forma de circulo. Estes sao preenchidos a preto no caso dos jogadores, verde para objetos comestiveis benignos e vermelho para objetos comestiveis venenosos. No ecrã do jogador, o seu avatar deverá ter uma circunferência azul e o avatar do adversário uma circunferência vermelha. O movimento destes jogadores é feito premindo as setas ou WASD. O jogo termina quando o tempo limite é atingido (2 minutos) sendo que a pontuação de cada jogador equivale à maior massa atingida durante a partida. É necessário ainda garantir que o cliente comunique com o servidor através de sockets TCP.
@@ -18,7 +18,7 @@ Do lado do servidor, será necessário garantir o funcionamento de uma simulaç�
 
 \pagebreak
 
-#2 - Cliente
+# 2 - Cliente
 Para implementação do cliente, foi utilizado o _Processing_. 
 
 Foi decidido utilizar duas _threads_, uma que comunica com o servidor para receber a informação de jogo relativa aos objetos e outra que desenha a interface gráfica com base nessa informação. O controlo de concorrência será conseguido através do uso de variáveis volatile, de modo a evitar _data race_.

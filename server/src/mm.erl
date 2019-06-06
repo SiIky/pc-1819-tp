@@ -5,7 +5,8 @@
          carne_pa_canhao/1,
 
          % to be used by matches
-         match_over/3,
+         leave_endgame/1,
+         match_over/1,
          match_over/2,
 
          updated_scores/1,
@@ -58,6 +59,8 @@ handle_call(State, From, _Msg) ->
     srv:reply(From, badargs),
     State.
 
+handle_cast({Ps, Matches}, {leave_endgame, Match}) ->
+    {Ps, Matches -- [Match]};
 handle_cast({Ps, _}=St, {updated_scores, Score}) ->
     [ cl:updated_scores(P, Score) || {P, _} <- Ps ],
     St;
@@ -65,13 +68,13 @@ handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
     {Ps -- [Xixa], Matches};
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
-handle_cast({Ps, Matches}, {match_over, Match, S1, S2}) ->
+handle_cast({Ps, Matches}, {match_over, S1, S2}) ->
     ts:new_score(S1),
     ts:new_score(S2),
-    {Ps, Matches -- [Match]};
-handle_cast({Ps, Matches}, {match_over, Match, S}) ->
+    {Ps, Matches};
+handle_cast({Ps, Matches}, {match_over, S}) ->
     ts:new_score(S),
-    {Ps, Matches -- [Match]};
+    {Ps, Matches};
 handle_cast(State, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     State.
@@ -82,14 +85,17 @@ leave_queue(Xixa) ->
 carne_pa_canhao(Xixa) ->
     srv:cast(?MODULE, {carne_pa_canhao, Xixa}).
 
-match_over(Match, S1, S2) ->
-    srv:cast(?MODULE, {match_over, Match, S1, S2}).
+match_over(S1, S2) ->
+    srv:cast(?MODULE, {match_over, S1, S2}).
 
-match_over(Match, S) ->
-    srv:cast(?MODULE, {match_over, Match, S}).
+match_over(S) ->
+    srv:cast(?MODULE, {match_over, S}).
 
 updated_scores(Score) ->
     srv:cast(?MODULE, {updated_scores, Score}).
+
+leave_endgame(Match) ->
+    srv:cast(?MODULE, {leave_endgame, Match}).
 
 state() ->
     srv:recv(srv:call(?MODULE, state)).

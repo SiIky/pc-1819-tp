@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 PFont font;
-final int interval = 120;
+final int interval = 10;
 
 State st = new State(); //
 BGThread bgt = new BGThread(st);
@@ -51,11 +51,16 @@ void setup()
 void draw()
 {
     switch (st.screen) {
-        case ingame:  draw_ingame(); break;
-        case inqueue: draw_inqueue(); break;
-        case login:   draw_login(); break;
-        case leave:   exit(); break;
+        case ingame:    draw_ingame(); break;
+        case inqueue:   draw_inqueue(); break;
+        case login:     draw_login(); break;
+        case end_game:  draw_end_game(); break;
+        case leave:     exit(); break;
     }
+}
+
+void draw_end_game() {
+    background(0);
 }
 
 void draw_login ()
@@ -203,6 +208,11 @@ void keyPressed ()
                     break;
             }
             break;
+        case end_game:
+            if (keyCode == ENTER) {
+                st.out.println("enqueue");
+                st.screen = Screen.inqueue;
+            }
         default: break;
     }
 }
