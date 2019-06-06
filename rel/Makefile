@@ -3,6 +3,7 @@ GV := \
     cl_ingame.gv        \
     cl_waiting.gv       \
     supervision_tree.gv \
+    clstates.gv         \
 
 MD := rel.md
 DEPS := $(GV) $(MD) Makefile

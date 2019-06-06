@@ -5,7 +5,7 @@
         ]).
 
 -define(DEFAULT_PORT, 4242).
-%%tells 
+%%starts the acceptor listenning on the default port. The listen socket waits for client connections
 start() ->
     {ok, LSock} = gen_tcp:listen(?DEFAULT_PORT ,[binary,{packet,line},{reuseaddr,true}]),
     Pid = spawn(fun() -> acc(LSock) end),
@@ -15,6 +15,10 @@ start() ->
 stop() ->
     srv:stop(?MODULE).
 
+%%waits for accept on listen socket, if ok connection is established and creates a new client with that scoket.
+%% change the process who receives message from the socket to client from acceptor (Default). If this is possible
+%% tell LM there's a new client in preauth, else error and stop.
+%%if 1s passes since the last connection, stop the acceptor so it can start receiving messages again.
 acc(LSock) ->
     case gen_tcp:accept(LSock, 1000) of
         {ok, Socket} ->
@@ -29,7 +33,9 @@ acc(LSock) ->
             handle_msgs(LSock);
         {error, timeout} -> handle_msgs(LSock);
         {error, _}=E -> E
-    end.
+    end.´
+
+%% if there're any messages received, process them, else go to acceptor.
 
 handle_msgs(LSock) ->
     receive

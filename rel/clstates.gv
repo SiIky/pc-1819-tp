@@ -1,0 +1,10 @@
+digraph G
+{
+      size="0.2,0.2";
+    ratio=auto;
+
+    login -> waiting [ label="ok" ];
+    waiting -> ingame [ label="enter_match" ];
+    ingame -> endgame [ label="leave_match" ];
+    endgame -> waiting [ label="enqueue" ];
+}
