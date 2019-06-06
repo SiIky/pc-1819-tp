@@ -20,10 +20,18 @@ new() ->
     {P1, P2} = new_players(),
     [new_map(), P1, P2].
 
-to_string([Map, P1, P2]) ->
-    [to_string(Map), player_to_string(P1), player_to_string(P2)];
-to_string(Map) ->
-    lists:join(" ", lists:map(fun(F) -> food_to_string(F) end, Map)).
+any_to_string(A) when is_atom(A)    -> atom_to_list(A);
+any_to_string(N) when is_integer(N) -> integer_to_list(N);
+any_to_string(N) when is_number(N)  -> integer_to_list(round(N)).
+
+to_string([Map, P1, P2])
+  when is_list(Map),
+       is_list(P1),
+       is_list(P2) ->
+    [map_to_string(Map), thing_to_string(P1), thing_to_string(P2)].
+
+map_to_string(Map) ->
+    lists:join(" ", lists:map(fun thing_to_string/1, Map)).
 
 new_map() ->
     [ new_food(I) || I <- lists:seq(0, 29) ].
@@ -48,24 +56,11 @@ new_food(I) ->
      rand:uniform(width() - 30) + 29,  % X
      rand:uniform(height() - 30) + 29, % Y
      rand:uniform(20) + 10,            % S
-     rand:uniform(100) > 70            % Poison?
+     rand:uniform(100) > 50            % Poison?
     ].
 
-food_to_string([I, X, Y, S, P]) ->
-    [
-     integer_to_list(I), ":",
-     integer_to_list(X), ":",
-     integer_to_list(Y), ":",
-     integer_to_list(S), ":",
-     atom_to_list(P)
-    ].
-
-player_to_string(P) ->
-    lists:join(":", lists:map(fun integer_to_list/1, P)).
-
-%absdiff(X, X)            -> 0;
-%absdiff(X, Y) when X > Y -> X - Y;
-%absdiff(X, Y) when X < Y -> Y - X.
+thing_to_string(T) ->
+    lists:join(":", lists:map(fun any_to_string/1, T)).
 
 %%% in_eating_range(A, B) -> is B in eating range of A ?
 
@@ -91,19 +86,13 @@ distance(X1, Y1, X2, Y2) ->
     Q = Y2 - Y1,
     math:sqrt((P * P) + (Q * Q)).
 
-speed(R) ->
-    floor(150 / R) + 5.
+speed(R) -> floor(150 / R) + 5.
 
-constrain(X, Min, _)
-  when X =< Min->
-    Min;
-constrain(X, _, Max)
-  when X >= Max->
-    Max;
-constrain(X, _, _) ->
-    X.
+constrain(X, Min, _)   when X =< Min -> Min;
+constrain(X, _,   Max) when X >= Max -> Max;
+constrain(X, _,   _)                 -> X.
 
-bool2num(true) -> 1;
+bool2num(true)  -> 1;
 bool2num(false) -> 0.
 
 player_move(P, {W, S, A, D}) ->
@@ -155,7 +144,7 @@ update(Map, [_, _, P1r]=P1, [_, _, P2r]=P2)
     {Eaten1, NotEaten1} = lists:partition(fun(F) -> in_eating_range(P1, F) end, NotEaten2),
     AteP1 = lists:foldl(fun player_eat/2, P1, Eaten1),
     AteP2 = lists:foldl(fun player_eat/2, P2, Eaten2),
-    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2],
+    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2 ],
     NewFood = [ new_food(I) || I <- EatenIdxs ],
     NewMap = NewFood ++ NotEaten1,
     {NewP1, NewP2} = player_eat_player(AteP1, AteP2),
@@ -167,7 +156,7 @@ update(Map, [_, _, P1r]=P1, [_, _, P2r]=P2)
     {Eaten2, NotEaten2} = lists:partition(fun(F) -> in_eating_range(P2, F) end, NotEaten1),
     AteP1 = lists:foldl(fun player_eat/2, P1, Eaten1),
     AteP2 = lists:foldl(fun player_eat/2, P2, Eaten2),
-    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2],
+    EatenIdxs = [ I || [I|_] <- Eaten1 ++ Eaten2 ],
     NewFood = [ new_food(I) || I <- EatenIdxs ],
     NewMap = NewFood ++ NotEaten2,
     {NewP1, NewP2} = player_eat_player(AteP1, AteP2),

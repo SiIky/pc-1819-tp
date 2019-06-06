@@ -22,12 +22,12 @@ new({P1, Name1}, {P2, Name2}) ->
     Timer ! {match, Match},
     Match.
 
-match({player_left, {P1, P2, Timer, S1, S2}, P1}) ->
-    mm:match_over(self(), S1, S2),
+match({player_left, {P1, P2, Timer, _, S2}, P1}) ->
+    mm:match_over(self(), S2),
     Timer ! stop,
     cl:leave_match(P2, self());
-match({player_left, {P1, P2, Timer, S1, S2}, P2}) ->
-    mm:match_over(self(), S1, S2),
+match({player_left, {P1, P2, Timer, S1, _}, P2}) ->
+    mm:match_over(self(), S1),
     Timer ! stop,
     cl:leave_match(P1, self());
 match({times_up, {P1, P2}, S1, S2}) ->

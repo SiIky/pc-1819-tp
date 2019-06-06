@@ -45,8 +45,10 @@ class BGThread extends Thread //background thread
     {
         try {
             String line = this.st.in.readLine();
-            if (line == null) /* socket was closed */
+            if (line == null) { /* socket was closed */
+                this.st.screen = Screen.leave;
                 return;
+            }
 
             System.out.println(line);
 

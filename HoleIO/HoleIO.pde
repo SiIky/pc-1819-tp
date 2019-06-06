@@ -4,7 +4,6 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 PFont font;
-String time = "";
 final int interval = 120;
 
 State st = new State(); //
@@ -125,7 +124,7 @@ void draw_ingame ()
 
     /* draw counter */
     int ts = interval - int((millis() - st.game_start_time) / 1000);
-    time = nf(ts, 3);
+    String time = nf(ts, 3);
     fill(255);
     text(time, width / 2, 80);
 }

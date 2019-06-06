@@ -6,6 +6,7 @@
 
          % to be used by matches
          match_over/3,
+         match_over/2,
 
          updated_scores/1,
          state/0,
@@ -24,6 +25,7 @@ stop() ->
     srv:stop(?MODULE).
 
 stop(Ps) ->
+    ts:stop(),
     [ cl:stop(P) || {P, _} <- Ps ],
     ok.
 
@@ -67,6 +69,9 @@ handle_cast({Ps, Matches}, {match_over, Match, S1, S2}) ->
     ts:new_score(S1),
     ts:new_score(S2),
     {Ps, Matches -- [Match]};
+handle_cast({Ps, Matches}, {match_over, Match, S}) ->
+    ts:new_score(S),
+    {Ps, Matches -- [Match]};
 handle_cast(State, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     State.
@@ -79,6 +84,9 @@ carne_pa_canhao(Xixa) ->
 
 match_over(Match, S1, S2) ->
     srv:cast(?MODULE, {match_over, Match, S1, S2}).
+
+match_over(Match, S) ->
+    srv:cast(?MODULE, {match_over, Match, S}).
 
 updated_scores(Score) ->
     srv:cast(?MODULE, {updated_scores, Score}).
