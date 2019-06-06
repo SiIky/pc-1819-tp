@@ -9,7 +9,7 @@
 * Paulo Barbosa A81480
 
 
-# 1 - Introdução
+# 1- Introdução
 Este relatório tem como objetivo documentar a implementação do trabalho prático sugerido pelo docente da UC Programação Concorrente. Este divide-se em duas partes, um cliente e um servidor.
 
 Do lado do cliente, foi implementada uma interface gráfica em java (Processing) onde é desenhado um espaço 2D, limitado nos 4 lados preenchido por objetos comestiveis e por ambos os jogadores. Todos os avatares presentes são em forma de circulo. Estes sao preenchidos a preto no caso dos jogadores, verde para objetos comestiveis benignos e vermelho para objetos comestiveis venenosos. No ecrã do jogador, o seu avatar deverá ter uma circunferência azul e o avatar do adversário uma circunferência vermelha. O movimento destes jogadores é feito premindo as setas ou WASD. O jogo termina quando o tempo limite é atingido (2 minutos) sendo que a pontuação de cada jogador equivale à maior massa atingida durante a partida. É necessário ainda garantir que o cliente comunique com o servidor através de sockets TCP.
@@ -18,7 +18,7 @@ Do lado do servidor, será necessário garantir o funcionamento de uma simulaç�
 
 \pagebreak
 
-# 2 - Cliente
+# 2- Cliente
 Para implementação do cliente, foi utilizado o _Processing_. 
 
 Foi decidido utilizar duas _threads_, uma que comunica com o servidor para receber a informação de jogo relativa aos objetos e outra que desenha a interface gráfica com base nessa informação. O controlo de concorrência será conseguido através do uso de variáveis volatile, de modo a evitar _data race_.
@@ -27,6 +27,9 @@ Como elementos de jogo temos as classes Player e Food. Todos os jogadores são i
 
  * De posição 2D que varia com o input do jogador.
  * De tamanho (raio) que varia com o que o jogador consome.
+# 3- Servidor 
+Nesta parte do relatório analisa-se a implementação de um servidor, para permitir uma experiência _multiplayer_, em _Erlang_.
+A estrutura do ser
  * De velocidade.
  * Booleanas que definem o jogador ou o adversário.
 
@@ -44,9 +47,28 @@ Na classe `HoleIO` será criada a socket de comunicação com o servidor e tudo 
 
 \pagebreak
 
+# 3- Servidor 
+Nesta parte do relatório analisa-se a implementação de um servidor, para permitir uma experiência _multiplayer_, em _Erlang_.
+
+O servidor implementado pode ser descrito pela seguinte arvore de supervisão:
+![Supervision tree](supervision_tree.png)
+
+De uma maneira mais detalhada, a árvore de cima pode ser descrita por:
+
+ 1. Um processo _GameServer_ (`gs`) que está encarregue de começar e parar os subordinados.
+ 2. Um processo _LoginManager_ (`lm`) que, quando recebe um novo cliente em pré-autenticação, lida com:
+     1. Criação de conta: Caso já exista uma conta com um certo _User_ envia uma mensagem de rejeição, caso contrário adiciona a nova conta ao dicionário.
+     2. _Login_: Caso certo _User_ já esteja numa lista de _Online_, envia uma mensagem de rejeição, caso contrário o _login_ acontece e este _User_ é adicionado à lista.
+     3. _Logout_: Após a pré-autenticação, o _User_ pode então fazer _logout_ que envolve ser removido da lista de _Online_.
+ 3. Um processo _MatchMaking_ (`mm`) que irá gerênciar as partidas e os resultados dos jogadores. Quando existirem 2 jogadores na _queue_ a partida irá começar. Os resultados dos jogadores serão atualizados quando a partida terminar, e isto pode acontecer de duas maneiras:
+ 	 1. Ambos os jogadores na partida, neste caso ambos os scores serão atualizados no _TopScores_.
+ 	 2. Só com um jogador, neste caso apenas o resultado do jogador restante será atualizado. 
+
+
+
+\pagebreak
 **bold** _italico_ __*bold e italico*__
 
-![Supervision tree](supervision_tree.png)
 
 ![A client before authenticating](cl_auth.png)
 

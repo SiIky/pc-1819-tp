@@ -5,7 +5,7 @@
         ]).
 
 -define(DEFAULT_PORT, 4242).
-
+%%tells 
 start() ->
     {ok, LSock} = gen_tcp:listen(?DEFAULT_PORT ,[binary,{packet,line},{reuseaddr,true}]),
     Pid = spawn(fun() -> acc(LSock) end),
@@ -39,6 +39,7 @@ handle_msgs(LSock) ->
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             handle_msgs(LSock)
-    after 0 ->
+    after 0 ->              acc(LSock)
+
               acc(LSock)
     end.

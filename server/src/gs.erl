@@ -5,7 +5,7 @@
          stop/0
         ]).
 
-start() ->
+start() -> 
     ok = lm:start(),
     ok = acc:start(),
     ok = mm:start(),
