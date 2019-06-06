@@ -20,21 +20,28 @@ class BGThread extends Thread //background thread
 
             String[] words = line.split(" "); //insert in array elements by space
 
-            if (!words[0].equals("enter_match")) //if its not enter match, exit
-                return;
+            if (words[0].equals("updated_scores")) {
+                for (int i = 0; i < 5; i++)
+                    this.st.top_scores[i] = "";
 
-            this.st.player    = ball_from_str(words[1], true); //receives word from server and converts it to player ball object
-            this.st.adversary = ball_from_str(words[2], false); // "" adversary ball obj
-            this.st.adversary_name = words[3]; // to draw adv name
+                for (int i = 1; i < words.length; i++) {
+                    String[] SN = words[i].split(":");
+                    this.st.top_scores[5 - i] = "(" + SN[1] + ", " + SN[0] + ")";
+                }
+            } else if (words[0].equals("enter_match")) {
+                this.st.player    = ball_from_str(words[1], true); //receives word from server and converts it to player ball object
+                this.st.adversary = ball_from_str(words[2], false); // "" adversary ball obj
+                this.st.adversary_name = words[3]; // to draw adv name
 
-            for (int i = 0; i < this.st.number_of_consumables; i++) {
-                String[] parms = words[4 + i].split(":"); // parse food info from server into array
-                int fidx = Integer.parseInt(parms[0]); // parse food index into array to know which obj was eaten
-                this.st.consumables[fidx] = food_from_parms(parms);
+                for (int i = 0; i < this.st.number_of_consumables; i++) {
+                    String[] parms = words[4 + i].split(":"); // parse food info from server into array
+                    int fidx = Integer.parseInt(parms[0]); // parse food index into array to know which obj was eaten
+                    this.st.consumables[fidx] = food_from_parms(parms);
+                }
+
+                st.game_start_time = millis();
+                st.screen = Screen.ingame; //update to ingame
             }
-
-            st.game_start_time = millis();
-            st.screen = Screen.ingame; //update to ingame
         } catch (Exception e) {
             this.st.screen = Screen.leave;
             return;
@@ -74,10 +81,6 @@ class BGThread extends Thread //background thread
         }
     }
 
-    void handle_end_game ()
-    {
-    }
-
     public void run ()
     {
         try {
@@ -85,7 +88,7 @@ class BGThread extends Thread //background thread
                 switch (this.st.screen) { //evaluate game state
                     case ingame:   handle_ingame(); break;
                     case inqueue:  handle_inqueue(); break;
-                    case end_game: handle_end_game(); break;
+                    case end_game: handle_inqueue(); break;
                     default: return;
                 }
             }

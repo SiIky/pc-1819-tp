@@ -87,6 +87,8 @@ handle_tcp_auth(Socket, <<"login ", UPb/binary>>) ->
                 ok ->
                     mm:carne_pa_canhao({self(), Uname}),
                     gen_tcp:send(Socket, "ok\n"),
+                    Score = ts:scores_to_string(ts:top_score()),
+                    gen_tcp:send(Socket, ["updated_scores ", Score, "\n"]),
                     {fun waiting/1, {Socket, Uname}};
                 invalid ->
                     gen_tcp:send(Socket, "invalid\n"),
@@ -145,9 +147,8 @@ handle_tcp_waiting(St, Msg) ->
     {fun waiting/1, St}.
 
 % Casts handler
-handle_cast_waiting({_Socket, _}=St, {updated_scores, _Score}) ->
-    % TODO: Send the client the updated scores
-    %gen_tcp:send(Socket, ["updated_scores ", Score, "\n"])
+handle_cast_waiting({Socket, _}=St, {updated_scores, Score}) ->
+    gen_tcp:send(Socket, ["updated_scores ", Score, "\n"]),
     {fun waiting/1, St};
 handle_cast_waiting({Socket, Uname}, {enter_match, Match, Map, Player, Adv, AdvName}) ->
     gen_tcp:send(Socket, [ "enter_match ", Player, " ", Adv, " ", AdvName, " ", Map, "\n" ]),
@@ -209,11 +210,12 @@ handle_cast_ingame(St, Msg) ->
 %%% End game
 %%%
 
-endgame({Socket, _, Match}=St) ->
+endgame({Socket, Uname, Match}=St) ->
     receive
         {tcp, Socket, Msg} ->
             switch(handle_tcp_endgame(St, Msg));
         {tcp_closed, Socket} ->
+            lm:logout(Uname),
             match:leave_endgame(Match, self()),
             ok;
         {cast, Msg} ->
@@ -230,6 +232,9 @@ handle_tcp_endgame(St, Msg) ->
     io:format("cl:endgame:tcp:unexpected ~p\n", [Msg]),
     {fun endgame/1, St}.
 
+handle_cast_endgame({Socket, _, _}=St, {updated_scores, Score}) ->
+    gen_tcp:send(Socket, ["updated_scores ", Score, "\n"]),
+    {fun endgame/1, St};
 handle_cast_endgame(St, Msg) ->
     io:format("cl:endgame:cast:unexpected ~p\n", [Msg]),
     {fun endgame/1, St}.

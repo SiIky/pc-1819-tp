@@ -8,7 +8,8 @@
          create_account/2,
          login/2,
          logout/1,
-         new_client/1
+         new_client/1,
+         online/0
         ]).
 
 start() ->
@@ -60,6 +61,9 @@ handle_call({UPs, Preauth, Online}=St, From, {create_account, Uname, Passwd}) ->
             srv:reply(From, ok),
             {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)], Online}
     end;
+handle_call({_, _, Online}=St, From, online) ->
+    srv:reply(From, Online),
+    St;
 handle_call(St, From, Msg) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     srv:reply(From, unexpected),
@@ -88,3 +92,6 @@ login(Uname, Passwd) ->
 
 logout(Uname) ->
     srv:cast(?MODULE, {logout, Uname}).
+
+online() ->
+    srv:recv(srv:call(?MODULE, online)).

@@ -4,9 +4,9 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 
 PFont font;
-final int interval = 10;
+final int interval = 120;
 
-State st = new State(); //
+State st = new State();
 BGThread bgt = new BGThread(st);
 
 float a;
@@ -61,6 +61,19 @@ void draw()
 
 void draw_end_game() {
     background(0);
+    
+    int curH = height/2;
+    
+    // prints top players
+    for(int i = 0; i < 5; i++) {
+        fill(255);
+        // draw score here
+        text(st.top_scores[i], width/2 - 20, curH);
+        curH -= 20;
+    }
+    
+    fill(255);
+    text("Press Enter to continue", width/2 - 20, height-100);
 }
 
 void draw_login ()
@@ -83,11 +96,18 @@ void draw_login ()
 
 void draw_inqueue ()
 {
-    background(51);
-    line(0, a, width, a);
-    a -= 0.5;
-    if (a < 0)
-        a = height;
+    background(0);
+    
+    int curH = height/2;
+    
+    // prints top players
+    for(int i = 0; i < 5; i++) {
+        fill(255);
+        // draw score here
+        text(st.top_scores[i], width/2, curH);
+        curH -= 20;
+    }
+
 }
 
 void mousePressed() {

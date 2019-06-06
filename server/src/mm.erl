@@ -61,16 +61,16 @@ handle_call(State, From, _Msg) ->
 
 handle_cast({Ps, Matches}, {leave_endgame, Match}) ->
     {Ps, Matches -- [Match]};
-handle_cast({Ps, _}=St, {updated_scores, Score}) ->
+handle_cast({Ps, Matches}=St, {updated_scores, Score}) ->
     [ cl:updated_scores(P, Score) || {P, _} <- Ps ],
+    [ match:updated_scores(M, Score) || M <- Matches ],
     St;
 handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
     {Ps -- [Xixa], Matches};
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
 handle_cast({Ps, Matches}, {match_over, S1, S2}) ->
-    ts:new_score(S1),
-    ts:new_score(S2),
+    ts:new_score(S1, S2),
     {Ps, Matches};
 handle_cast({Ps, Matches}, {match_over, S}) ->
     ts:new_score(S),

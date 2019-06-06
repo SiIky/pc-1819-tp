@@ -7,6 +7,8 @@ class State
 {
     volatile Screen screen = Screen.login; /* starts in the login screen */
     volatile int game_start_time = 0;
+    volatile String[] top_scores = new String[5];
+
 
     Socket sock;
     BufferedReader in; //receive from server
@@ -23,6 +25,11 @@ class State
 
     State () //state constructor
     {
+        top_scores[0] = "";
+        top_scores[1] = "";
+        top_scores[2] = "";
+        top_scores[3] = "";
+        top_scores[4] = "";
         for (int i = 0; i < this.number_of_consumables; i++)
             consumables[i] = new Food(); // fill consumable array with food constructor
     }

@@ -3,6 +3,7 @@
          abort/2,
          act/3,
          leave_endgame/2,
+         updated_scores/2,
 
          new/2,
          stop/1
@@ -41,8 +42,11 @@ match({times_up, {P1, P2}, S1, S2}) ->
 match({endgame, []}) ->
     mm:leave_endgame(self()),
     ok;
-match({endgame, _}=St) ->
+match({endgame, Ps}=St) ->
     receive
+        stop ->
+            [ cl:stop(P) || P <- Ps ],
+            ok;
         {cast, Msg} ->
             match(handle_cast(St, Msg))
     end;
@@ -68,6 +72,9 @@ handle_call(St, From, Msg) ->
 
 handle_cast({endgame, Ps}, {leave_endgame, P}) ->
     {endgame, Ps -- [P]};
+handle_cast({endgame, Ps}=St, {updated_scores, Score}) ->
+    [ cl:updated_scores(P, Score) || P <- Ps ],
+    St;
 handle_cast({P1, P2, GS, PCs, Timer, Name1, Name2}, click) ->
     {NewMap, NewP1, NewP2, NewFood} = update(GS, PCs),
     % Send only the new food to the client
@@ -86,6 +93,8 @@ handle_cast({P1, P2, GS, {PC1, PC2}, Timer, Name1, Name2}, {act, Player, Action}
                 P2 -> {PC1,                    update_pc(PC2, Action)}
             end,
     {P1, P2, GS, NewPC, Timer, Name1, Name2};
+handle_cast(St, {updated_scores, _}) ->
+    St;
 handle_cast(St, Msg) ->
     io:format("match:cast:unexpected ~p\n", [Msg]),
     St.
@@ -105,8 +114,7 @@ timer() ->
         stop ->
             ok;
         {match, Match} ->
-            timer(Match, 10 * 1000); % 2min
-        %timer(Match, (2 * 60 * 1000) - 7000); % 2min
+            timer(Match, (2 * 60 * 1000) - 7000); % 2min
         Msg ->
             io:format("timer:unexpected ~p\n", [Msg])
     end.
@@ -141,6 +149,9 @@ update([Map, P1, P2], {PC1, PC2}) ->
 
 leave_endgame(Match, P) ->
     srv:cast(Match, {leave_endgame, P}).
+
+updated_scores(Match, Score) ->
+    srv:cast(Match, {updated_scores, Score}).
 
 %%%
 %%% Player controls
