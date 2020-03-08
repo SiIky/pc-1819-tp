@@ -1,2 +1,8 @@
+% vim: ft=erlang
 {'src/*',
-[debug_info,{outdir,"ebin"}]}.
+ [
+  debug_info,
+  {i, "include/"},
+  {outdir, "ebin"}
+ ]
+}.

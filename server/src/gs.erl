@@ -1,28 +1,25 @@
 -module(gs).
+-behavior(application).
 -export([
-         % start/stopping
-         start/0,
-         stop/0
+         start/2,
+         stop/1
         ]).
 
-start() -> 
+start(normal, Args) ->
     ok = lm:start(),
     ok = acc:start(),
     ok = mm:start(),
-    Pid = spawn(fun() -> gs() end),
-    register(?MODULE, Pid),
-    ok.
+    {ok, spawn(fun gs/0), Args}.
 
-stop() ->
-    srv:stop(?MODULE).
+stop(State) ->
+    io:format("Stopping... State: ~p\n", [State]),
+    acc:stop(),
+    lm:stop(),
+    mm:stop(),
+    ok.
 
 gs() ->
     receive
-        stop ->
-            acc:stop(),
-            lm:stop(),
-            mm:stop(),
-            ok;
         Msg ->
             io:format("Unexpected message: ~p\n", [Msg]),
             gs()

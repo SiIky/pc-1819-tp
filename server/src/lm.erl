@@ -23,7 +23,7 @@ stop() ->
 
 %% preauth is a list of authenticating clients. this function tells them to stop
 stop(Preauth) ->
-    [ cl:stop(P) || P <- Preauth ], 
+    [ cl:stop(P) || P <- Preauth ],
     ok.
 
 %%create initial state
@@ -35,14 +35,14 @@ init() ->
 lm({_, Preauth, _}=St) ->
     receive
         stop ->
-            stop(Preauth); 
+            stop(Preauth);
         {call, From, Msg} ->
             lm(handle_call(St, From, Msg));
         {cast, Msg} ->
             lm(handle_cast(St, Msg))
     end.
 
-%%handles login requests, if an element is a member of the list of online usernames, it replies to server that   
+%%handles login requests, if an element is a member of the list of online usernames, it replies to server that
 %% user is already logged in. If its not it replies OK, removes the element from preauth and adds it to the already online list.
 handle_call({UPs, Preauth, Online}=St, From, {login, Uname, Passwd}) ->
     case dict:find(Uname, UPs) of

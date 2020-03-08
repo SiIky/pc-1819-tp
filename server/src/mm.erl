@@ -17,7 +17,7 @@
         ]).
 %% starts the topscore and the mm process
 start() ->
-    ok = ts:start(), 
+    ok = ts:start(),
     Pid = spawn(fun() -> mm(init()) end),
     register(?MODULE, Pid),
     ok.
@@ -36,7 +36,7 @@ init() ->
 mm({[P2, P1 | Rest], Matches}) ->
     Match = match:new(P1, P2),
     mm({Rest, [Match|Matches]});
-%% If it receives a stop message stops the matches and the players in queue 
+%% If it receives a stop message stops the matches and the players in queue
 %% otherwise it handles the calls and casts
 mm({Ps, Matches}=State) ->
     receive
@@ -76,7 +76,7 @@ handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
 %%player enters the queue
 handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
     {[Xixa|Ps], Matches};
-%% once the match is over, scores from both players are updated to topscores  
+%% once the match is over, scores from both players are updated to topscores
 handle_cast({Ps, Matches}, {match_over, S1, S2}) ->
     ts:new_score(S1, S2),
     {Ps, Matches};
