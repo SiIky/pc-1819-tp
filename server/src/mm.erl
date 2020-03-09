@@ -1,6 +1,15 @@
 -module(mm).
+-behavior(gen_server).
 -export([
-         % to be used by players (?)
+         handle_call/3,
+         handle_cast/2,
+         init/1,
+         start/0,
+         start_link/0,
+         stop/0,
+         terminate/2,
+
+         % to be used by players
          leave_queue/1,
          carne_pa_canhao/1,
 
@@ -10,101 +19,77 @@
          match_over/2,
 
          updated_scores/1,
-         state/0,
-
-         start/0,
-         stop/0
+         state/0
         ]).
-%% starts the topscore and the mm process
+
+init([]) ->
+    {ok, {[], []}}.
+
+start_link() ->
+    {ok, _TSPid} = ts:start_link(),
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
 start() ->
     {ok, _TSPid} = ts:start(),
-    Pid = spawn(fun() -> mm(init()) end),
-    register(?MODULE, Pid),
-    ok.
-%%stops the mm process
+    gen_server:start({local, ?MODULE}, ?MODULE, [], []).
+
 stop() ->
-    srv:stop(?MODULE).
-%%stops the topscore and the players in queue
-stop(Ps) ->
+    gen_server:stop(?MODULE).
+
+terminate(_Reason, {Ps, Matches}) ->
     ts:stop(),
+    [ match:stop(Match) || Match <- Matches ],
     [ cl:stop(P) || {P, _} <- Ps ],
     ok.
 
-init() ->
-    {[], []}.
-%%starts a new match between two players in queue
-mm({[P2, P1 | Rest], Matches}) ->
-    Match = match:new(P1, P2),
-    mm({Rest, [Match|Matches]});
-%% If it receives a stop message stops the matches and the players in queue
-%% otherwise it handles the calls and casts
-mm({Ps, Matches}=State) ->
-    receive
-        stop ->
-            [ match:stop(Match) || Match <- Matches ],
-            stop(Ps),
-            ok;
-        {call, {Pid, Ref}=From, Msg}
-          when is_pid(Pid),
-               is_reference(Ref) ->
-            mm(handle_call(State, From, Msg));
-        {cast, Msg} ->
-            mm(handle_cast(State, Msg));
-        Msg ->
-            io:format("Unexpected message: ~p\n", [Msg])
-    end.
-%%replies with the sate to whoever asks
-handle_call(State, From, state) ->
-    srv:reply(From, State),
-    State;
-%%otherwise ignores
-handle_call(State, From, _Msg) ->
-    srv:reply(From, badargs),
+
+make_match({[P2, P1 | Rest], Matches}) ->
+    {Rest, [match:new(P1, P2)|Matches]};
+make_match(State) ->
     State.
-%%if match tells it to leave endgame screen, match is removed from list.
-handle_cast({Ps, Matches}, {leave_endgame, Match}) ->
-    {Ps, Matches -- [Match]};
-%%at the end of the match, match sends to mm player scores and mm sends to topscores the scores for it to update.
-%% once topscores update, sends mm with the updated score.
-handle_cast({Ps, Matches}=St, {updated_scores, Score}) ->
+
+handle_call(state, _From, State) ->
+    {reply, State, State};
+handle_call(Msg, _From, State) ->
+    {reply, {badargs, Msg}, State}.
+
+handle_cast({leave_endgame, Match}, {Ps, Matches}) ->
+    {noreply, {Ps, Matches -- [Match]}};
+handle_cast({updated_scores, Score}, {Ps, Matches}=St) ->
     [ cl:updated_scores(P, Score) || {P, _} <- Ps ],
     [ match:updated_scores(M, Score) || M <- Matches ],
-    St;
-%%if  a player left queue, mm removes it from the player list.
-handle_cast({Ps, Matches}, {leave_queue, Xixa}) ->
-    {Ps -- [Xixa], Matches};
-%%player enters the queue
-handle_cast({Ps, Matches}, {carne_pa_canhao, Xixa}) ->
-    {[Xixa|Ps], Matches};
-%% once the match is over, scores from both players are updated to topscores
-handle_cast({Ps, Matches}, {match_over, S1, S2}) ->
+    {noreply, St};
+handle_cast({leave_queue, Xixa}, {Ps, Matches}) ->
+    {noreply, {Ps -- [Xixa], Matches}};
+handle_cast({carne_pa_canhao, Xixa}, {Ps, Matches}) ->
+    {noreply, make_match({[Xixa|Ps], Matches})};
+handle_cast({match_over, S1, S2}, {Ps, Matches}) ->
     ts:new_score(S1, S2),
-    {Ps, Matches};
-%%If onle player leaves during the match, the player that stayed has its score updated.
-handle_cast({Ps, Matches}, {match_over, S}) ->
+    {noreply, {Ps, Matches}};
+handle_cast({match_over, S}, {Ps, Matches}) ->
     ts:new_score(S),
-    {Ps, Matches};
-handle_cast(State, Msg) ->
+    {noreply, {Ps, Matches}};
+handle_cast(Msg, State) ->
     io:format("Unexpected message: ~p\n", [Msg]),
-    State.
-%%player leaves a queue
+    {noreply, State}.
+
 leave_queue(Xixa) ->
-    srv:cast(?MODULE, {leave_queue, Xixa}).
-%player enters a queue
+    gen_server:cast(?MODULE, {leave_queue, Xixa}).
+
 carne_pa_canhao(Xixa) ->
-    srv:cast(?MODULE, {carne_pa_canhao, Xixa}).
-%%match is over, both scores update
+    gen_server:cast(?MODULE, {carne_pa_canhao, Xixa}).
+
 match_over(S1, S2) ->
-    srv:cast(?MODULE, {match_over, S1, S2}).
-%%match is over because one player left, one score updates
+    gen_server:cast(?MODULE, {match_over, S1, S2}).
+
 match_over(S) ->
-    srv:cast(?MODULE, {match_over, S}).
-%%update topscores
+    gen_server:cast(?MODULE, {match_over, S}).
+
 updated_scores(Score) ->
-    srv:cast(?MODULE, {updated_scores, Score}).
-%%leave endgame screen
+    gen_server:cast(?MODULE, {updated_scores, Score}).
+
 leave_endgame(Match) ->
-    srv:cast(?MODULE, {leave_endgame, Match}).
-%%state
+    gen_server:cast(?MODULE, {leave_endgame, Match}).
+
 state() ->
-    srv:recv(srv:call(?MODULE, state)).
+    gen_server:call(?MODULE, state).

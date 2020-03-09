@@ -8,7 +8,7 @@
 start(normal, Args) ->
     ok = lm:start(),
     ok = acc:start(),
-    ok = mm:start(),
+    {ok, _MMPid} = mm:start(),
     {ok, spawn(fun gs/0), Args}.
 
 stop(State) ->

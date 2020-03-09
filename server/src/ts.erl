@@ -15,8 +15,6 @@
          scores_to_string/1
         ]).
 
-%%% gen_server behavior
-
 init([]) ->
     {ok, []}.
 
@@ -33,7 +31,7 @@ handle_call(top_score, _From, Scores) ->
     {reply, Scores, Scores};
 handle_call(Msg, _From, Scores) ->
     io:format("Unexpected message: ~p\n", [Msg]),
-    {reply, unexpected, Scores}.
+    {reply, {badargs, Msg}, Scores}.
 
 handle_cast({new_score, S1, S2}, Scores) ->
     NewScores = take(5, insert(insert(Scores, S1), S2)),
