@@ -17,7 +17,7 @@
         ]).
 %% starts the topscore and the mm process
 start() ->
-    ok = ts:start(),
+    {ok, _TSPid} = ts:start(),
     Pid = spawn(fun() -> mm(init()) end),
     register(?MODULE, Pid),
     ok.
