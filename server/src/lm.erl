@@ -17,8 +17,14 @@
          online/0
         ]).
 
+-record(st, {
+          ups=dict:new(),
+          preauth=sets:new(),
+          online=sets:new()
+         }).
+
 init([]) ->
-    {ok, {dict:new(), [], sets:new()}}.
+    {ok, #st{}}.
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -29,47 +35,48 @@ start() ->
 stop() ->
     gen_server:stop(?MODULE).
 
-terminate(_Reason, {_, Preauth, _}) ->
-    [ cl:stop(P) || P <- Preauth ],
-    ok.
+terminate(_Reason, St=#st{}) ->
+    sets:fold(fun(P, Ret) -> cl:stop(P), Ret end, ok, St#st.preauth).
 
-handle_call({login, Uname, Passwd}, From, {UPs, Preauth, Online}=St) ->
-    case dict:find(Uname, UPs) of
+handle_call({login, Uname, Passwd}, From, St=#st{}) ->
+    case dict:find(Uname, St#st.ups) of
         {ok, Passwd} ->
-            case sets:is_element(Uname, Online) of
+            case sets:is_element(Uname, St#st.online) of
                 true ->
-                    {reply, already_logged_in, {UPs, Preauth, Online}};
+                    {reply, already_logged_in, St};
                 false ->
-                    {reply, ok, {UPs, Preauth -- [srv:from_pid(From)], sets:add_element(Uname, Online)}}
+                    {reply, ok, St#st{preauth=sets:del_element(srv:from_pid(From), St#st.preauth),
+                                      online=sets:add_element(Uname, St#st.online)}}
             end;
         _ ->
             {reply, invalid, St}
     end;
 
-handle_call({create_account, Uname, Passwd}, From, {UPs, Preauth, Online}=St) ->
-    case dict:is_key(Uname, UPs) of
+handle_call({create_account, Uname, Passwd}, From, St=#st{}) ->
+    case dict:is_key(Uname, St#st.ups) of
         true ->
             {reply, user_exists, St};
         false ->
-            {reply, ok, {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)], Online}}
+            {reply, ok, St#st{ups=dict:store(Uname, Passwd, St#st.ups),
+                              preauth=sets:del_element(srv:from_pid(From), St#st.preauth)}}
     end;
-handle_call(online, _From, {_, _, Online}=St) ->
-    {reply, Online, St};
+handle_call(online, _From, St=#st{}) ->
+    {reply, St#st.online, St};
 
-handle_call(Msg, _From, St) ->
+handle_call(Msg, _From, St=#st{}) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     {reply, badargs, St}.
 
-handle_cast({logout, Uname}, {UPs, Preauth, Online}) ->
-    {noreply, {UPs, Preauth, sets:del_element(Uname, Online)}};
+handle_cast({logout, Uname}, St=#st{}) ->
+    {noreply, St#st{online=sets:del_element(Uname, St#st.online)}};
 
-handle_cast({new_client, C}, {UPs, Preauth, Online}) ->
-    {noreply, {UPs, [C|Preauth], Online}};
+handle_cast({new_client, C}, St=#st{}) ->
+    {noreply, St#st{preauth=sets:add_element(C, St#st.preauth)}};
 
-handle_cast({abort, C}, {UPs, Preauth, Online}) ->
-    {noreply, {UPs, Preauth -- [C], Online}};
+handle_cast({abort, C}, St=#st{}) ->
+    {noreply, St#st{preauth=sets:del_element(C, St#st.preauth)}};
 
-handle_cast(Msg, St) ->
+handle_cast(Msg, St=#st{}) ->
     io:format("Unexpected message: ~p\n", [Msg]),
     {noreply, St}.
 
