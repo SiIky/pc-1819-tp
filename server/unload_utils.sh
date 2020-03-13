@@ -1,0 +1,2 @@
+unalias watchdir
+unalias erls

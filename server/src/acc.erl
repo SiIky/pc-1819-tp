@@ -1,13 +1,12 @@
 -module(acc).
 -export([
-         start/0,
+         start/1,
          stop/0
         ]).
 
--define(DEFAULT_PORT, 4242).
 %%starts the acceptor listenning on the default port. The listen socket waits for client connections
-start() ->
-    {ok, LSock} = gen_tcp:listen(?DEFAULT_PORT ,[binary,{packet,line},{reuseaddr,true}]),
+start(LPort) ->
+    {ok, LSock} = gen_tcp:listen(LPort, [binary,{packet,line},{reuseaddr,true}]),
     Pid = spawn(fun() -> acc(LSock) end),
     register(?MODULE, Pid),
     ok.

@@ -5,11 +5,11 @@
          stop/1
         ]).
 
-start(normal, Args) ->
-    ok = lm:start(),
-    ok = acc:start(),
+start(normal, LPort) ->
+    {ok, _LMPid} = lm:start(),
+    ok = acc:start(LPort),
     {ok, _MMPid} = mm:start(),
-    {ok, spawn(fun gs/0), Args}.
+    {ok, spawn(fun gs/0), LPort}.
 
 stop(State) ->
     io:format("Stopping... State: ~p\n", [State]),

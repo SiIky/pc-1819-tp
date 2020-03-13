@@ -1,8 +1,13 @@
 -module(lm).
+-behavior(gen_server).
 -export([
-         % start/stopping
+         handle_call/3,
+         handle_cast/2,
+         init/1,
          start/0,
+         start_link/0,
          stop/0,
+         terminate/2,
 
          abort/1,
          create_account/2,
@@ -12,106 +17,76 @@
          online/0
         ]).
 
+init([]) ->
+    {ok, {dict:new(), [], sets:new()}}.
+
+start_link() ->
+    gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+
 start() ->
-    Pid = spawn(fun() -> lm(init()) end), %% start new process
-    register(?MODULE, Pid), %%register its name
-    ok.
+    gen_server:start({local, ?MODULE}, ?MODULE, [], []).
 
-%% sends message to lm to stop the manager
 stop() ->
-    srv:stop(?MODULE).
+    gen_server:stop(?MODULE).
 
-%% preauth is a list of authenticating clients. this function tells them to stop
-stop(Preauth) ->
+terminate(_Reason, {_, Preauth, _}) ->
     [ cl:stop(P) || P <- Preauth ],
     ok.
 
-%%create initial state
-init() ->
-    {dict:new(), [], sets:new()}.
-
-%% handles whats going on with the logins. if it receives a stop message, it stops everyone in authenticating process.
-%% if it receives a call, it will handle_call and the same for cast.
-lm({_, Preauth, _}=St) ->
-    receive
-        stop ->
-            stop(Preauth);
-        {call, From, Msg} ->
-            lm(handle_call(St, From, Msg));
-        {cast, Msg} ->
-            lm(handle_cast(St, Msg))
-    end.
-
-%%handles login requests, if an element is a member of the list of online usernames, it replies to server that
-%% user is already logged in. If its not it replies OK, removes the element from preauth and adds it to the already online list.
-handle_call({UPs, Preauth, Online}=St, From, {login, Uname, Passwd}) ->
+handle_call({login, Uname, Passwd}, From, {UPs, Preauth, Online}=St) ->
     case dict:find(Uname, UPs) of
         {ok, Passwd} ->
             case sets:is_element(Uname, Online) of
                 true ->
-                    srv:reply(From, already_logged_in),
-                    {UPs, Preauth, Online};
+                    {reply, already_logged_in, {UPs, Preauth, Online}};
                 false ->
-                    srv:reply(From, ok),
-                    {UPs, Preauth -- [srv:from_pid(From)], sets:add_element(Uname, Online)}
+                    {reply, ok, {UPs, Preauth -- [srv:from_pid(From)], sets:add_element(Uname, Online)}}
             end;
         _ ->
-            srv:reply(From, invalid),
-            St
+            {reply, invalid, St}
     end;
 
-%%handles the creation of accounts, if there's already an username in the map, it sends the message that the user already exists
-%% if not, store the user in the map and remove it from the preauth list.
-handle_call({UPs, Preauth, Online}=St, From, {create_account, Uname, Passwd}) ->
+handle_call({create_account, Uname, Passwd}, From, {UPs, Preauth, Online}=St) ->
     case dict:is_key(Uname, UPs) of
         true ->
-            srv:reply(From, user_exists),
-            St;
+            {reply, user_exists, St};
         false ->
-            srv:reply(From, ok),
-            {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)], Online}
+            {reply, ok, {dict:store(Uname, Passwd, UPs), Preauth -- [srv:from_pid(From)], Online}}
     end;
-handle_call({_, _, Online}=St, From, online) ->
-    srv:reply(From, Online),
-    St;
+handle_call(online, _From, {_, _, Online}=St) ->
+    {reply, Online, St};
 
-handle_call(St, From, Msg) ->
+handle_call(Msg, _From, St) ->
     io:format("Unexpected message: ~p\n", [Msg]),
-    srv:reply(From, unexpected),
-    St.
+    {reply, badargs, St}.
 
-%%removes user from online list
-handle_cast({UPs, Preauth, Online}, {logout, Uname}) ->
-    {UPs, Preauth, sets:del_element(Uname, Online)};
+handle_cast({logout, Uname}, {UPs, Preauth, Online}) ->
+    {noreply, {UPs, Preauth, sets:del_element(Uname, Online)}};
 
-%adds a new cliente to the preauth list.
-handle_cast({UPs, Preauth, Online}, {new_client, C}) ->
-    {UPs, [C|Preauth], Online};
+handle_cast({new_client, C}, {UPs, Preauth, Online}) ->
+    {noreply, {UPs, [C|Preauth], Online}};
 
-%%aborts a client in the preauth process
-handle_cast({UPs, Preauth, Online}, {abort, C}) ->
-    {UPs, Preauth -- [C], Online};
-%%wut
-handle_cast(St, _Msg) ->
-    St.
+handle_cast({abort, C}, {UPs, Preauth, Online}) ->
+    {noreply, {UPs, Preauth -- [C], Online}};
 
-%%tells the server to abort a client in preauth
+handle_cast(Msg, St) ->
+    io:format("Unexpected message: ~p\n", [Msg]),
+    {noreply, St}.
+
 abort(C) ->
-    srv:cast(?MODULE, {abort, C}).
+    gen_server:cast(?MODULE, {abort, C}).
 
-%% tells the server there's a new client
 new_client(C) ->
-    srv:cast(?MODULE, {new_client, C}).
+    gen_server:cast(?MODULE, {new_client, C}).
 
-%%asks the server to create the account
 create_account(Uname, Passwd) ->
-    srv:recv(srv:call(?MODULE, {create_account, Uname, Passwd})).
-%%asks the server to login
+    gen_server:call(?MODULE, {create_account, Uname, Passwd}).
+
 login(Uname, Passwd) ->
-    srv:recv(srv:call(?MODULE, {login, Uname, Passwd})).
-%%tells the server to logout.
+    gen_server:call(?MODULE, {login, Uname, Passwd}).
+
 logout(Uname) ->
-    srv:cast(?MODULE, {logout, Uname}).
+    gen_server:cast(?MODULE, {logout, Uname}).
 
 online() ->
-    srv:recv(srv:call(?MODULE, online)).
+    gen_server:call(?MODULE, online).

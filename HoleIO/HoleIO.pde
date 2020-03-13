@@ -15,8 +15,9 @@ ArrayList<TextBox> textboxes = new ArrayList<TextBox>();
 
 void setup()
 {
+    String host = (args != null && args.length == 1) ? args[0] : "localhost";
     try {
-        st.sock = new Socket("localhost", 4242); //creates socket on port 4242
+        st.sock = new Socket(host, 4242); //creates socket on port 4242
         st.in = new BufferedReader(new InputStreamReader(st.sock.getInputStream())); //init reads from server
         st.out = new PrintWriter(st.sock.getOutputStream(), true); //init writes to server
         font = createFont("Arial", 60);
