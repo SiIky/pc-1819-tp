@@ -3,12 +3,13 @@
  [
   {description, "The Game Server"},
   {vsn, "0.0.0"},
-  {mod, {gs, 4242}}, % 4242 will be the Args in gs:start/2
+  {mod, {gs_app, 4242}}, % 4242 will be the Args in gs:start/2
   {modules,
    [
     "acc",
     "cl",
-    "gs",
+    "gs_app",
+    "gs_sup",
     "lm",
     "map",
     "match",
