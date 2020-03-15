@@ -1,5 +1,6 @@
 -module(cl).
 -export([
+         changed_controlling_process/2,
          click/4,
          enter_match/6,
          leave_match/2,
@@ -11,6 +12,9 @@
 %%%
 %%% Public interface
 %%%
+
+changed_controlling_process(Player, Socket) ->
+    srv:cast(Player, {changed_controlling_process, Socket}).
 
 click(P, Map, Player, Adv) ->
     srv:cast(P, {click, [Player, " ", Adv, " ", Map, "\n"]}).
@@ -37,7 +41,7 @@ leave_match(Player, Match) ->
 %% @param Socket The TCP socket to communicate with the client
 %% @returns The newly created client's PID
 new(Socket) ->
-    spawn(fun() -> auth(Socket) end).
+    spawn(fun() -> waiting_control_change(Socket) end).
 
 %% @brief Tell a player that the server is going down
 %% @param Player The player
@@ -63,6 +67,18 @@ switch({F, St}) ->
 %%%
 %%% Authentication state
 %%%
+
+waiting_control_change(Socket) ->
+    receive
+        stop ->
+            close_conn(Socket);
+        {cast, {changed_controlling_process, Socket}} ->
+            inet:setopts(Socket, [{active, true}]),
+            auth(Socket);
+        Msg ->
+            io:format("cl:waiting_control_change:unexpected ~p\n", [Msg]),
+            waiting_control_change(Socket)
+    end.
 
 % Messages switch
 auth(Socket) ->

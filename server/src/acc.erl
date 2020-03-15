@@ -6,7 +6,7 @@
 
 %%starts the acceptor listenning on the default port. The listen socket waits for client connections
 start(LPort) ->
-    {ok, LSock} = gen_tcp:listen(LPort, [binary,{packet,line},{reuseaddr,true}]),
+    {ok, LSock} = gen_tcp:listen(LPort, [binary, {active, false}, {packet, line}, {reuseaddr, true}]),
     Pid = spawn(fun() -> acc(LSock) end),
     register(?MODULE, Pid),
     ok.
@@ -24,10 +24,11 @@ acc(LSock) ->
             Cl = cl:new(Socket),
             case gen_tcp:controlling_process(Socket, Cl) of
                 ok ->
+                    cl:changed_controlling_process(Cl, Socket),
                     lm:new_client(Cl);
                 {error, Reason} ->
                     cl:stop(Cl),
-                    io:format("Error changing the controlling process: ~p", [Reason])
+                    io:format("Error changing the controlling process: ~p\n", [Reason])
             end,
             handle_msgs(LSock);
         {error, timeout} -> handle_msgs(LSock);
@@ -42,7 +43,7 @@ handle_msgs(LSock) ->
             gen_tcp:close(LSock),
             ok;
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("acc:handle_msgs:unexpected: ~p\n", [Msg]),
             handle_msgs(LSock)
     after 0 ->
               acc(LSock)

@@ -70,7 +70,7 @@ handle_cast({match_over, S}, {Ps, Matches}) ->
     ts:new_score(S),
     {noreply, {Ps, Matches}};
 handle_cast(Msg, State) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("mm:handle_cast:unexpected: ~p\n", [Msg]),
     {noreply, State}.
 
 leave_queue(Xixa) ->

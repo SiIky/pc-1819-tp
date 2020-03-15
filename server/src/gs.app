@@ -1,9 +1,8 @@
 % vim: ft=erlang
-{application,
- gs,
+{application, gs,
  [
   {description, "The Game Server"},
-  {vsn, "1.0.0"},
+  {vsn, "0.0.0"},
   {mod, {gs, 4242}}, % 4242 will be the Args in gs:start/2
   {modules,
    [
@@ -16,6 +15,12 @@
     "mm",
     "srv",
     "ts"
+   ]
+  },
+  {applications,
+   [
+    kernel,
+    stdlib
    ]
   },
   {registered,

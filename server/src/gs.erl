@@ -16,11 +16,13 @@ stop(State) ->
     acc:stop(),
     lm:stop(),
     mm:stop(),
+    timer:sleep(1000),
+    init:stop(),
     ok.
 
 gs() ->
     receive
         Msg ->
-            io:format("Unexpected message: ~p\n", [Msg]),
+            io:format("gs:gs:unexpected: ~p\n", [Msg]),
             gs()
     end.

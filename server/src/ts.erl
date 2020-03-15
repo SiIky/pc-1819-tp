@@ -30,7 +30,7 @@ stop() ->
 handle_call(top_score, _From, Scores) ->
     {reply, Scores, Scores};
 handle_call(Msg, _From, Scores) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("ts:handle_call:unexpected: ~p\n", [Msg]),
     {reply, {badargs, Msg}, Scores}.
 
 handle_cast({new_score, S1, S2}, Scores) ->

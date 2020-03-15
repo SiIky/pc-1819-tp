@@ -14,7 +14,7 @@
          login/2,
          logout/1,
          new_client/1,
-         online/0
+         state/0
         ]).
 
 -record(st, {
@@ -38,7 +38,9 @@ stop() ->
 terminate(_Reason, St=#st{}) ->
     sets:fold(fun(P, Ret) -> cl:stop(P), Ret end, ok, St#st.preauth).
 
-handle_call({login, Uname, Passwd}, From, St=#st{}) ->
+handle_call({login, DirtyUname, DirtyPasswd}, From, St=#st{}) ->
+    Uname = sanitize_uname(DirtyUname),
+    Passwd = sanitize_passwd(DirtyPasswd),
     case dict:find(Uname, St#st.ups) of
         {ok, Passwd} ->
             case sets:is_element(Uname, St#st.online) of
@@ -52,7 +54,9 @@ handle_call({login, Uname, Passwd}, From, St=#st{}) ->
             {reply, invalid, St}
     end;
 
-handle_call({create_account, Uname, Passwd}, From, St=#st{}) ->
+handle_call({create_account, DirtyUname, DirtyPasswd}, From, St=#st{}) ->
+    Uname = sanitize_uname(DirtyUname),
+    Passwd = sanitize_passwd(DirtyPasswd),
     case dict:is_key(Uname, St#st.ups) of
         true ->
             {reply, user_exists, St};
@@ -60,14 +64,15 @@ handle_call({create_account, Uname, Passwd}, From, St=#st{}) ->
             {reply, ok, St#st{ups=dict:store(Uname, Passwd, St#st.ups),
                               preauth=sets:del_element(srv:from_pid(From), St#st.preauth)}}
     end;
-handle_call(online, _From, St=#st{}) ->
-    {reply, St#st.online, St};
+handle_call(state, _From, St=#st{}) ->
+    {reply, St, St};
 
 handle_call(Msg, _From, St=#st{}) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("lm:handle_call:unexpected: ~p\n", [Msg]),
     {reply, badargs, St}.
 
-handle_cast({logout, Uname}, St=#st{}) ->
+handle_cast({logout, DirtyUname}, St=#st{}) ->
+    Uname = sanitize_uname(DirtyUname),
     {noreply, St#st{online=sets:del_element(Uname, St#st.online)}};
 
 handle_cast({new_client, C}, St=#st{}) ->
@@ -77,7 +82,7 @@ handle_cast({abort, C}, St=#st{}) ->
     {noreply, St#st{preauth=sets:del_element(C, St#st.preauth)}};
 
 handle_cast(Msg, St=#st{}) ->
-    io:format("Unexpected message: ~p\n", [Msg]),
+    io:format("lm:handle_cast:unexpected: ~p\n", [Msg]),
     {noreply, St}.
 
 abort(C) ->
@@ -95,5 +100,16 @@ login(Uname, Passwd) ->
 logout(Uname) ->
     gen_server:cast(?MODULE, {logout, Uname}).
 
-online() ->
-    gen_server:call(?MODULE, online).
+state() ->
+    gen_server:call(?MODULE, state).
+
+sanitize_string(String) ->
+    IsAllowedChar =
+    fun(Char) ->
+            DiffChar =
+            fun(DisallowedChar) -> Char =/= DisallowedChar end,
+            lists:all(DiffChar, "\n") end,
+    lists:filter(IsAllowedChar, String).
+
+sanitize_uname(Uname) -> sanitize_string(Uname).
+sanitize_passwd(Passwd) -> sanitize_string(Passwd).
